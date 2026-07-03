@@ -1,6 +1,10 @@
 package io.github.engineermyoa.gitlocalreview.ui
 
 import com.intellij.openapi.ListSelection
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.DataSink
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
@@ -16,6 +20,7 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import git4idea.repo.GitRepository
 import git4idea.repo.GitRepositoryManager
+import io.github.engineermyoa.gitlocalreview.actions.MarkReviewedAndOpenNextAction
 import io.github.engineermyoa.gitlocalreview.git.ReviewFile
 import io.github.engineermyoa.gitlocalreview.session.DiffSpec
 import java.awt.BorderLayout
@@ -65,6 +70,12 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         subscribeToModel()
     }
 
+    override fun uiDataSnapshot(sink: DataSink) {
+        super.uiDataSnapshot(sink)
+        sink.set(ReviewPanelController.DATA_KEY, controller)
+        sink.set(ReviewPanelController.SELECTED_REL_PATH, selectedRelPath())
+    }
+
     fun openDiffAt(files: List<ReviewFile>, startRelPath: String?) {
         if (files.isEmpty()) return
         val index = files.indexOfFirst { it.relPath == startRelPath }.coerceAtLeast(0)
@@ -87,11 +98,21 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         val progressRow = JPanel(FlowLayout(FlowLayout.LEFT, 4, 0)).apply {
             add(progressLabel)
             add(unreviewedOnlyCheckBox)
+            add(buildActionToolbar())
         }
         return JPanel(BorderLayout()).apply {
             add(comboRow, BorderLayout.NORTH)
             add(progressRow, BorderLayout.SOUTH)
         }
+    }
+
+    private fun buildActionToolbar(): JComponent {
+        val group = DefaultActionGroup().apply {
+            ActionManager.getInstance().getAction(MarkReviewedAndOpenNextAction.ACTION_ID)?.let(::add)
+        }
+        val actionToolbar = ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLWINDOW_CONTENT, group, true)
+        actionToolbar.targetComponent = this
+        return actionToolbar.component
     }
 
     private fun initializeSelection() {
@@ -222,9 +243,16 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
     }
 
     private fun openSelectedDiff() {
-        val change = VcsTreeModelData.selected(tree).userObjects(Change::class.java).firstOrNull() ?: return
+        val change = selectedChange() ?: return
         val files = controller.model.value.files
         openDiffAt(files, files.firstOrNull { it.change == change }?.relPath)
+    }
+
+    private fun selectedChange(): Change? = VcsTreeModelData.selected(tree).userObjects(Change::class.java).firstOrNull()
+
+    private fun selectedRelPath(): String? {
+        val change = selectedChange() ?: return null
+        return controller.model.value.files.firstOrNull { it.change == change }?.relPath
     }
 
     private enum class SpecOption(val label: String) {

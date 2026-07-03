@@ -18,10 +18,23 @@ class MarkReviewedAndOpenNextAction : DumbAwareAction() {
         controller.markReviewedAndOpenNext(relPath)
     }
 
-    private fun findContext(e: AnActionEvent): Pair<ReviewPanelController, String>? {
+    private fun findContext(e: AnActionEvent): Pair<ReviewPanelController, String>? =
+        findDiffRequestContext(e) ?: findPanelContext(e)
+
+    private fun findDiffRequestContext(e: AnActionEvent): Pair<ReviewPanelController, String>? {
         val request = e.getData(DiffDataKeys.DIFF_REQUEST) ?: return null
         val controller = request.getUserData(ReviewPanelController.CONTROLLER_KEY) ?: return null
         val relPath = request.getUserData(ReviewPanelController.REL_PATH_KEY) ?: return null
         return controller to relPath
+    }
+
+    private fun findPanelContext(e: AnActionEvent): Pair<ReviewPanelController, String>? {
+        val controller = e.getData(ReviewPanelController.DATA_KEY) ?: return null
+        val relPath = e.getData(ReviewPanelController.SELECTED_REL_PATH) ?: return null
+        return controller to relPath
+    }
+
+    companion object {
+        const val ACTION_ID = "GitLocalReview.MarkReviewedAndOpenNext"
     }
 }

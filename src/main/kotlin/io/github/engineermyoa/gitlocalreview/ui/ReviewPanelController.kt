@@ -1,5 +1,6 @@
 package io.github.engineermyoa.gitlocalreview.ui
 
+import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
@@ -185,6 +186,8 @@ class ReviewPanelController(private val project: Project, private val cs: Corout
         private const val DEBOUNCE_MILLIS = 500
         val CONTROLLER_KEY: Key<ReviewPanelController> = Key.create("GitLocalReview.controller")
         val REL_PATH_KEY: Key<String> = Key.create("GitLocalReview.relPath")
+        val DATA_KEY: DataKey<ReviewPanelController> = DataKey.create("GitLocalReview.Controller")
+        val SELECTED_REL_PATH: DataKey<String> = DataKey.create("GitLocalReview.SelectedRelPath")
         fun scope(project: Project): CoroutineScope = project.service<GitLocalReviewScope>().cs
     }
 }
