@@ -8,7 +8,6 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
-import com.intellij.util.SingleAlarm
 import git4idea.repo.GitRepository
 import git4idea.repo.GitRepositoryChangeListener
 import io.github.engineermyoa.gitlocalreview.git.DiffProvider
@@ -19,9 +18,12 @@ import io.github.engineermyoa.gitlocalreview.session.SessionKey
 import io.github.engineermyoa.gitlocalreview.state.ReviewStateService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -50,10 +52,20 @@ class ReviewPanelController(private val project: Project, private val cs: Corout
     val model: StateFlow<UiModel> = _model
 
     private var refreshJob: Job? = null
-    private val refreshAlarm = SingleAlarm({ refresh() }, DEBOUNCE_MILLIS, project)
+    private val refreshTrigger = MutableSharedFlow<Unit>(replay = 0, extraBufferCapacity = 1)
 
     init {
+        subscribeToRefreshTrigger()
         subscribeToAutoRefresh()
+    }
+
+    @OptIn(FlowPreview::class)
+    private fun subscribeToRefreshTrigger() {
+        cs.launch {
+            refreshTrigger
+                .debounce(DEBOUNCE_MILLIS.toLong())
+                .collect { refresh() }
+        }
     }
 
     fun selectSession(repository: GitRepository, spec: DiffSpec) {
@@ -114,28 +126,37 @@ class ReviewPanelController(private val project: Project, private val cs: Corout
 
     private fun applySuccess(repository: GitRepository, spec: DiffSpec, files: List<ReviewFile>) {
         val sessionKey = SessionKey(repository.root.path, spec)
-        val reviewedPaths = reconcileViewedState(sessionKey, files)
-        _model.update {
-            it.copy(files = files, reviewedPaths = reviewedPaths, failure = null, repository = repository, spec = spec)
+        val (matchedPaths, invalidatedPaths) = reconcileViewedState(sessionKey, files)
+        val newFilesPaths = files.map { it.relPath }.toSet()
+        _model.update { current ->
+            current.copy(
+                files = files,
+                reviewedPaths = ((current.reviewedPaths - invalidatedPaths) + matchedPaths) intersect newFilesPaths,
+                failure = null,
+                repository = repository,
+                spec = spec
+            )
         }
     }
 
-    private fun reconcileViewedState(sessionKey: SessionKey, files: List<ReviewFile>): Set<String> {
+    private fun reconcileViewedState(sessionKey: SessionKey, files: List<ReviewFile>): Pair<Set<String>, Set<String>> {
         val storedFingerprints = stateService.viewedFingerprints(sessionKey)
-        val reviewedPaths = mutableSetOf<String>()
+        val matchedPaths = mutableSetOf<String>()
+        val invalidatedPaths = mutableSetOf<String>()
         val invalidated = mutableListOf<Pair<String, String>>()
         for (file in files) {
             val storedFingerprint = storedFingerprints[file.relPath] ?: continue
             if (storedFingerprint == file.fingerprint) {
-                reviewedPaths += file.relPath
+                matchedPaths += file.relPath
             } else {
+                invalidatedPaths += file.relPath
                 invalidated += file.relPath to storedFingerprint
             }
         }
         if (invalidated.isNotEmpty()) {
             stateService.markViewed(sessionKey, invalidated, viewed = false)
         }
-        return reviewedPaths
+        return matchedPaths to invalidatedPaths
     }
 
     private fun subscribeToAutoRefresh() {
@@ -143,7 +164,7 @@ class ReviewPanelController(private val project: Project, private val cs: Corout
         connection.subscribe(
             GitRepository.GIT_REPO_CHANGE,
             GitRepositoryChangeListener { repository ->
-                if (repository == model.value.repository) refreshAlarm.cancelAndRequest()
+                if (repository.root == model.value.repository?.root) refreshTrigger.tryEmit(Unit)
             }
         )
         connection.subscribe(
@@ -151,7 +172,7 @@ class ReviewPanelController(private val project: Project, private val cs: Corout
             object : BulkFileListener {
                 override fun after(events: MutableList<out VFileEvent>) {
                     if (model.value.repository != null && isFileSystemBackedSpec(model.value.spec)) {
-                        refreshAlarm.cancelAndRequest()
+                        refreshTrigger.tryEmit(Unit)
                     }
                 }
             }
