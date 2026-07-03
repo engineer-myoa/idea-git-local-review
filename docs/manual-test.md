@@ -1,0 +1,85 @@
+# Manual Test Checklist — Git Local Review v0.1
+
+The automated test suite covers pure logic in `session/` and `git/` (fingerprinting, invalidation,
+`SessionKey` round-tripping, diff parsing). Everything below is UI-driven and requires a human
+running a real IDE — it cannot be exercised headlessly.
+
+## How to run
+
+```bash
+export JAVA_HOME=$(ls -d ~/.sdkman/candidates/java/21* | head -1)
+./gradlew runIde
+```
+
+Open a project with real git history, and ideally with both staged changes and pending working
+tree edits, so all three session types have something to show. A repository with more than one
+commit and a remote (`origin`) branch is needed to exercise Branch Range base-ref auto-detection.
+
+## Checklist
+
+### Session types
+
+- [ ] **① Staged session lists changed files** — Stage a handful of files (`git add`), open the
+      **Git Local Review** tool window, switch the session type to **Staged**, and verify every
+      staged file appears in the tree with the correct A/M/D status and directory grouping.
+- [ ] **④ Branch Range session (base auto-detect / manual)** — Switch the session type to
+      **Branch Range**. Verify the base ref combo auto-detects a sensible default (e.g.
+      `origin/develop` or `origin/main`). Then manually pick a different branch from the combo (or
+      type one in) and verify the file list updates to the new `base...HEAD` diff.
+
+### Persistence & invalidation
+
+- [ ] **② Reviewed state survives an IDE restart** — In a Staged (or Branch Range) session, check
+      off several files, restart the IDE (or re-run `runIde`), reopen the tool window on the same
+      session, and confirm the same files are still shown as reviewed. This also validates the
+      persisted-state XML round-trip (serialize on shutdown, deserialize on startup).
+- [ ] **⑤ Reviewed file reverts to unreviewed on change** — Mark a file reviewed, then modify its
+      contents on disk, refresh (manual **⟳** or wait for auto-refresh), and confirm its checkbox
+      clears automatically and it is flagged as changed after review.
+
+### Diff viewer
+
+- [ ] **③ Double-click opens the native diff chain** — Double-click any file in the tree (or press
+      Enter). Confirm the built-in IntelliJ diff viewer opens and that you can move to the
+      previous/next file in the session from inside the viewer, without going back to the tool
+      window.
+
+### Mark Reviewed & Open Next
+
+- [ ] **⑥ Mark & Next from the diff viewer** — With a diff open, right-click inside it and choose
+      **Mark Reviewed and Open Next Unreviewed** (or press **⌃⌥⇧V** /
+      `Control+Alt+Shift+V`). Confirm the current file is checked off in the tool window tree and a
+      new diff chain opens at the next unreviewed file.
+- [ ] **⑦ Mark & Next on the last unreviewed file** — Repeat until exactly one unreviewed file
+      remains, then trigger Mark & Next on it. Confirm it is a no-op beyond marking that file
+      reviewed (no new diff is opened) and the tool window's progress label reads 100%.
+- [ ] **⑧ Mark & Next from the toolbar / tree selection** — Without opening a diff, select a file
+      in the tool window tree and trigger **Mark Reviewed and Open Next Unreviewed** from the tool
+      window toolbar button. Confirm it dispatches using the tree selection and produces the same
+      result as the diff-viewer path (⑥).
+
+### Filtering
+
+- [ ] **⑨ Unreviewed-only filter toggle** — Turn on **Unreviewed only** and confirm already-reviewed
+      files disappear from the tree. Turn it off and confirm they reappear with their checkbox
+      state intact (no state loss or corruption from filtering).
+
+### Multi-repository
+
+- [ ] **⑩ Multi git-root switching** — In a project with more than one git repository, use the repo
+      selector to switch roots. Confirm the file tree, session type, and reviewed state shown all
+      correspond to the newly selected repository, and that each root's state is independent (e.g.
+      reviewed files in one root are not shown as reviewed in another).
+
+### Known UX observation (v0.2 candidate — not a defect)
+
+- [ ] **⑪ Toolbar button visibility with no selection** — With nothing selected in the tree and no
+      diff open, observe that the Mark Reviewed & Open Next toolbar button *disappears* rather than
+      appearing disabled (current behavior: `isEnabledAndVisible = false`). Note whether a
+      disabled-but-visible affordance would communicate the action's existence more clearly. This
+      is a UX trade-off to revisit in v0.2, not a bug to fix now.
+
+## Reporting results
+
+When running this checklist, record the IDE build/version used and pass/fail per item so any
+regression can be tied to a specific platform version.
