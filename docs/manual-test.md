@@ -26,6 +26,9 @@ commit and a remote (`origin`) branch is needed to exercise Branch Range base-re
       **Branch Range**. Verify the base ref combo auto-detects a sensible default (e.g.
       `origin/develop` or `origin/main`). Then manually pick a different branch from the combo (or
       type one in) and verify the file list updates to the new `base...HEAD` diff.
+      Also test with a repository whose origin/HEAD points to a non-main default (e.g. develop):
+      run `git remote set-head origin develop`, reopen the panel, and verify the base combo
+      auto-selects origin/develop.
 
 ### Persistence & invalidation
 
@@ -47,8 +50,8 @@ commit and a remote (`origin`) branch is needed to exercise Branch Range base-re
 ### Mark Reviewed & Open Next
 
 - [ ] **⑥ Mark & Next from the diff viewer** — With a diff open, right-click inside it and choose
-      **Mark Reviewed and Open Next Unreviewed** (or press **⌃⌥⇧V** /
-      `Control+Alt+Shift+V`). Confirm the current file is checked off in the tool window tree and a
+      **Mark Reviewed and Open Next Unreviewed** (or press **⌃⌥⇧M** /
+      `Control+Alt+Shift+M`). Confirm the current file is checked off in the tool window tree and a
       new diff chain opens at the next unreviewed file.
 - [ ] **⑦ Mark & Next on the last unreviewed file** — Repeat until exactly one unreviewed file
       remains, then trigger Mark & Next on it. Confirm it is a no-op beyond marking that file

@@ -15,7 +15,7 @@
   viewer, with no custom diff rendering.
 - Mark Reviewed & Open Next action: marks the current file as reviewed and opens the next
   unreviewed file. Available from the diff viewer's right-click menu, the tool window toolbar, and
-  the file tree selection, with a default shortcut of `Control+Alt+Shift+V`.
+  the file tree selection, with a default shortcut of `Control+Alt+Shift+M`.
 - Unreviewed-only filter toggle on the tool window tree.
 - Multi git-root support via a repository selector.
 

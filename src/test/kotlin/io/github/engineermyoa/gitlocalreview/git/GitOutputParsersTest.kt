@@ -45,4 +45,10 @@ class GitOutputParsersTest {
         val out = "100644 a1b2c3 0\tsrc/Main.kt\u0000malformed-entry-without-tab\u0000"
         assertEquals(mapOf("src/Main.kt" to "a1b2c3"), GitOutputParsers.parseLsFilesStaged(out))
     }
+
+    @Test
+    fun `skips entries whose meta has fewer than 3 space-separated fields`() {
+        val out = "100644 blob\tsrc/ShortMeta.kt\u0000100644 blob a1b2c3\tsrc/Main.kt\u0000"
+        assertEquals(mapOf("src/Main.kt" to "a1b2c3"), GitOutputParsers.parseLsTree(out))
+    }
 }

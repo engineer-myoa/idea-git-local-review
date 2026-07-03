@@ -36,7 +36,7 @@ the same review motion — file list → open → check as viewed → next — t
   viewer.
 - **Mark Reviewed & Open Next** — marks the current file as reviewed and jumps straight to the next
   unreviewed one. Available from the diff viewer's right-click menu, the tool window toolbar, and
-  the file tree selection, with a default shortcut of **⌃⌥⇧V** (`Control+Alt+Shift+V`).
+  the file tree selection, with a default shortcut of **⌃⌥⇧M** (`Control+Alt+Shift+M`).
 - **Unreviewed-only filter** to focus the tree on what's left.
 - **Multi-repository support** — switch between git roots from a repository selector when a
   project has more than one.
@@ -85,7 +85,7 @@ The installable zip is produced at `build/distributions/idea-git-local-review-<v
 5. Double-click a file (or press Enter) to open it in the diff viewer — you can navigate through
    every file in the session from inside the viewer.
 6. Check a file off (click its checkbox, or press Space) to mark it reviewed, or use
-   **Mark Reviewed & Open Next** (⌃⌥⇧V) to mark the current file and jump straight to the next
+   **Mark Reviewed & Open Next** (⌃⌥⇧M) to mark the current file and jump straight to the next
    unreviewed one.
 7. Toggle **Unreviewed only** to hide files you've already checked off.
 8. The progress bar and `Reviewed n / m` label track how much of the session is done.

@@ -17,7 +17,7 @@ object GitOutputParsers {
         val fields = entry.split('\t', limit = 2)
         if (fields.size < 2) return null
         val (meta, path) = fields
-        val blobSha = meta.trim().split(' ')[2]
+        val blobSha = meta.trim().split(' ').getOrNull(2) ?: return null
         return path to blobSha
     }
 
@@ -26,6 +26,8 @@ object GitOutputParsers {
         if (fields.size < 2) return null
         val (meta, path) = fields
         val parts = meta.trim().split(' ')
-        return if (parts[2] != "0") null else path to parts[1]
+        val blobSha = parts.getOrNull(1) ?: return null
+        val stage = parts.getOrNull(2) ?: return null
+        return if (stage != "0") null else path to blobSha
     }
 }

@@ -1,5 +1,7 @@
 package io.github.engineermyoa.gitlocalreview.ui
 
+import com.intellij.dvcs.repo.VcsRepositoryManager
+import com.intellij.dvcs.repo.VcsRepositoryMappingListener
 import com.intellij.openapi.ListSelection
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
@@ -46,6 +48,7 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
 
     private var applyingInclusion = false
     private var populatingBaseCombo = false
+    private var updatingRepoCombo = false
 
     init {
         repoCombo.renderer = SimpleListCellRenderer.create("") { it.root.name }
@@ -58,7 +61,7 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         tree.setDoubleClickAndEnterKeyHandler { openSelectedDiff() }
         tree.setInclusionListener { onInclusionChanged() }
         unreviewedOnlyCheckBox.addActionListener { render(controller.model.value) }
-        refreshButton.addActionListener { controller.refresh() }
+        refreshButton.addActionListener { onRefreshRequested() }
 
         controller.openDiffRequest = ::openDiffAt
 
@@ -69,6 +72,7 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         baseCombo.addActionListener { onBaseChanged() }
 
         subscribeToModel()
+        subscribeToRepositoryMappingChanges()
     }
 
     override fun uiDataSnapshot(sink: DataSink) {
@@ -121,15 +125,43 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         repoCombo.model = DefaultComboBoxModel(repositories.toTypedArray())
         specCombo.model = DefaultComboBoxModel(SpecOption.entries.toTypedArray())
         val repository = repositories.firstOrNull() ?: return
+        initializeRepositorySelection(repository)
+    }
+
+    private fun initializeRepositorySelection(repository: GitRepository) {
         populateBaseCombo(repository)
         updateBaseComboEnabled()
         selectSessionFromCombos()
     }
 
     private fun onRepositorySelected() {
+        if (updatingRepoCombo) return
         val repository = selectedRepository() ?: return
         populateBaseCombo(repository)
         selectSessionFromCombos()
+    }
+
+    private fun subscribeToRepositoryMappingChanges() {
+        project.messageBus.connect(ReviewPanelController.scope(project)).subscribe(
+            VcsRepositoryManager.VCS_REPOSITORY_MAPPING_UPDATED,
+            VcsRepositoryMappingListener {
+                ApplicationManager.getApplication().invokeLater { onRepositoryMappingChanged() }
+            }
+        )
+    }
+
+    private fun onRepositoryMappingChanged() {
+        val previousSelection = selectedRepository()
+        val repositories = GitRepositoryManager.getInstance(project).repositories
+        val restoredSelection = previousSelection?.takeIf { it in repositories }
+        updatingRepoCombo = true
+        try {
+            repoCombo.model = DefaultComboBoxModel(repositories.toTypedArray())
+            if (restoredSelection != null) repoCombo.selectedItem = restoredSelection
+        } finally {
+            updatingRepoCombo = false
+        }
+        if (restoredSelection == null) selectedRepository()?.let(::initializeRepositorySelection)
     }
 
     private fun onSpecChanged() {
@@ -140,6 +172,10 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
     private fun onBaseChanged() {
         if (populatingBaseCombo) return
         if (currentSpecOption() == SpecOption.BRANCH_RANGE) selectSessionFromCombos()
+    }
+
+    private fun onRefreshRequested() {
+        if (repoCombo.itemCount == 0) onRepositoryMappingChanged() else controller.refresh()
     }
 
     private fun selectSessionFromCombos() {

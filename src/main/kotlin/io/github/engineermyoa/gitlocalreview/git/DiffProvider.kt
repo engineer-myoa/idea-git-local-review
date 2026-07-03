@@ -14,6 +14,7 @@ import git4idea.commands.GitCommand
 import git4idea.commands.GitLineHandler
 import git4idea.repo.GitRepository
 import io.github.engineermyoa.gitlocalreview.session.DiffSpec
+import kotlinx.coroutines.CancellationException
 
 data class ReviewFile(val change: Change, val relPath: String, val fingerprint: String)
 
@@ -30,7 +31,9 @@ class DiffProvider(private val project: Project) {
             DiffSpec.Staged -> collectStaged(repository)
             DiffSpec.WorkingTree -> collectWorkingTree(repository)
         }
-    } catch (e: VcsException) {
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
         DiffResult.Failure(e.message ?: "git operation failed")
     }
 
