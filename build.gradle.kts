@@ -12,6 +12,8 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.10.2")
 
+    compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3")
+
     intellijPlatform {
         intellijIdeaCommunity("2024.2.6")
         bundledPlugin("Git4Idea")
