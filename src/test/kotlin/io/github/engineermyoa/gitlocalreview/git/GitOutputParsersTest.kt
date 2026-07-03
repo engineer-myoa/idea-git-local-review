@@ -30,4 +30,19 @@ class GitOutputParsersTest {
     fun `sha256 is deterministic`() {
         assertEquals(Fingerprints.sha256("x"), Fingerprints.sha256("x"))
     }
+
+    @Test
+    fun `skips malformed entries without a tab separator`() {
+        val out = "100644 blob a1b2c3\tsrc/Main.kt\u0000malformed-entry-without-tab\u0000100644 blob d4e5f6\tREADME.md\u0000"
+        assertEquals(
+            mapOf("src/Main.kt" to "a1b2c3", "README.md" to "d4e5f6"),
+            GitOutputParsers.parseLsTree(out)
+        )
+    }
+
+    @Test
+    fun `parseLsFilesStaged skips malformed entries without a tab separator`() {
+        val out = "100644 a1b2c3 0\tsrc/Main.kt\u0000malformed-entry-without-tab\u0000"
+        assertEquals(mapOf("src/Main.kt" to "a1b2c3"), GitOutputParsers.parseLsFilesStaged(out))
+    }
 }
