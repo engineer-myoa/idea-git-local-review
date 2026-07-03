@@ -71,6 +71,14 @@ class DiffProvider(private val project: Project) {
         return DiffResult.Success(files.sortedBy { it.relPath })
     }
 
+    fun detectRemoteHeadBranch(repository: GitRepository): String? = try {
+        runGit(repository, GitCommand.REV_PARSE, listOf("--abbrev-ref", "refs/remotes/origin/HEAD"))
+            .trim()
+            .takeIf { it.startsWith("origin/") }
+    } catch (e: VcsException) {
+        null
+    }
+
     private fun toChange(repository: GitRepository, diffChange: GitChangeUtils.GitDiffChange, indexBlobSha: String?): Change {
         val before = diffChange.beforePath?.let { path ->
             GitContentRevision.createRevision(path, GitRevisionNumber.HEAD, project)

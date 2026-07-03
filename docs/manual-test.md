@@ -35,7 +35,7 @@ commit and a remote (`origin`) branch is needed to exercise Branch Range base-re
       persisted-state XML round-trip (serialize on shutdown, deserialize on startup).
 - [ ] **⑤ Reviewed file reverts to unreviewed on change** — Mark a file reviewed, then modify its
       contents on disk, refresh (manual **⟳** or wait for auto-refresh), and confirm its checkbox
-      clears automatically and it is flagged as changed after review.
+      clears automatically after refresh.
 
 ### Diff viewer
 

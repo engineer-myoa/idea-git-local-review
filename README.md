@@ -20,14 +20,15 @@ the same review motion — file list → open → check as viewed → next — t
 
 - **Three review session types**
   - **Branch Range** (`base...HEAD`, three-dot diff) — the same diff GitHub would show for a PR.
-    The base ref is auto-detected from the repository's remote default branch, and can also be
-    picked from local/remote branches or typed freely.
+    The base ref is auto-detected from the repository's remote default branch (via `origin/HEAD`,
+    falling back to `origin/main` / `origin/master` / the first remote branch when `origin/HEAD`
+    isn't set), and can also be picked from local/remote branches or typed freely.
   - **Staged** — review what's about to be committed (`HEAD` vs. the index).
   - **Working Tree** — review all uncommitted changes (`HEAD` vs. the working tree).
 - **Per-file reviewed state**, tracked independently per session, with a GitHub-style checkbox and
   a live `Reviewed n / m (xx%)` progress indicator.
-- **Automatic invalidation** — if a file you already reviewed changes again, its checkbox clears
-  automatically and it's flagged as changed after review.
+- **Automatic invalidation** — if a file you already reviewed changes again, it automatically
+  returns to unreviewed (a visual "changed after review" badge is planned for v0.2).
 - **Commit-durable review state** — in a Branch Range session, reviewing a file survives any number
   of commits landing on *other* files. Only re-editing the reviewed file itself invalidates it.
 - **Native diff viewer integration** — no custom diff renderer. Opening a file uses IntelliJ's
@@ -35,7 +36,7 @@ the same review motion — file list → open → check as viewed → next — t
   viewer.
 - **Mark Reviewed & Open Next** — marks the current file as reviewed and jumps straight to the next
   unreviewed one. Available from the diff viewer's right-click menu, the tool window toolbar, and
-  the file tree's context, with a default shortcut of **⌃⌥⇧V** (`Control+Alt+Shift+V`).
+  the file tree selection, with a default shortcut of **⌃⌥⇧V** (`Control+Alt+Shift+V`).
 - **Unreviewed-only filter** to focus the tree on what's left.
 - **Multi-repository support** — switch between git roots from a repository selector when a
   project has more than one.

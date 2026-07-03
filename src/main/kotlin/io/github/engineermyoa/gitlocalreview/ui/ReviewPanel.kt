@@ -29,6 +29,7 @@ import javax.swing.DefaultComboBoxModel
 import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, true) {
@@ -162,25 +163,45 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
     }
 
     private fun populateBaseCombo(repository: GitRepository) {
+        val remoteNames = repository.branches.remoteBranches.map { it.name }
+        val branchNames = (remoteNames + repository.branches.localBranches.map { it.name }).distinct().sorted()
+        val heuristicDefault = heuristicDefaultBase(remoteNames)
         populatingBaseCombo = true
         try {
-            val branchNames =
-                (repository.branches.remoteBranches.map { it.name } + repository.branches.localBranches.map { it.name })
-                    .distinct()
-                    .sorted()
             baseCombo.model = DefaultComboBoxModel(branchNames.toTypedArray())
-            baseCombo.selectedItem = detectDefaultBase(repository)
+            baseCombo.selectedItem = heuristicDefault
         } finally {
             populatingBaseCombo = false
         }
+        detectRemoteHeadDefaultBase(repository, remoteNames, heuristicDefault)
     }
 
-    private fun detectDefaultBase(repository: GitRepository): String {
-        val remoteNames = repository.branches.remoteBranches.map { it.name }
-        return remoteNames.firstOrNull { it == "origin/main" }
+    private fun heuristicDefaultBase(remoteNames: List<String>): String =
+        remoteNames.firstOrNull { it == "origin/main" }
             ?: remoteNames.firstOrNull { it == "origin/master" }
             ?: remoteNames.firstOrNull()
             ?: ""
+
+    private fun detectRemoteHeadDefaultBase(repository: GitRepository, remoteNames: List<String>, heuristicDefault: String) {
+        ReviewPanelController.scope(project).launch(Dispatchers.Default) {
+            val detected = controller.detectRemoteHeadBase(repository)?.takeIf { it in remoteNames } ?: return@launch
+            if (detected == heuristicDefault) return@launch
+            ApplicationManager.getApplication().invokeLater {
+                adoptDetectedBase(repository, heuristicDefault, detected)
+            }
+        }
+    }
+
+    private fun adoptDetectedBase(repository: GitRepository, expectedCurrent: String, detected: String) {
+        if (selectedRepository() != repository) return
+        if (baseCombo.selectedItem != expectedCurrent) return
+        populatingBaseCombo = true
+        try {
+            baseCombo.selectedItem = detected
+        } finally {
+            populatingBaseCombo = false
+        }
+        if (currentSpecOption() == SpecOption.BRANCH_RANGE) selectSessionFromCombos()
     }
 
     private fun subscribeToModel() {
