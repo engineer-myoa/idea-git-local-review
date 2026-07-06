@@ -3,10 +3,10 @@
 *Review your changes like a pull request — before it exists.*
 
 Git Local Review is an IntelliJ Platform plugin that opens a virtual pull request over any local
-diff — a branch range, the staging area, or the working tree — and tracks which files you've
-already reviewed, GitHub-PR style, in a dedicated tool window.
+diff — a comparison between any two refs, the staging area, or the working tree — and tracks which
+files you've already reviewed, GitHub-PR style, in a dedicated tool window.
 
-> **Screenshots coming with v0.2.**
+> **Screenshots coming soon.**
 
 ## Why
 
@@ -18,19 +18,24 @@ the same review motion — file list → open → check as viewed → next — t
 
 ## Features
 
-- **Three review session types**
-  - **Branch Range** (`base...HEAD`, three-dot diff) — the same diff GitHub would show for a PR.
-    The base ref is auto-detected from the repository's remote default branch (via `origin/HEAD`,
-    falling back to `origin/main` / `origin/master` / the first remote branch when `origin/HEAD`
-    isn't set), and can also be picked from local/remote branches or typed freely.
-  - **Staged** — review what's about to be committed (`HEAD` vs. the index).
-  - **Working Tree** — review all uncommitted changes (`HEAD` vs. the working tree).
+- **Two review modes**
+  - **Local Changes** — review **Staged** files (`HEAD` vs. the index) or the **Working Tree**
+    (`HEAD` vs. the working tree).
+  - **Compare Refs** — pick any two refs, **A** and **B** (local/remote branches, tags, or a typed
+    commit hash), and review the three-dot diff between them (`A...B`), the same diff GitHub would
+    show for a PR when **B** is left at its default of `HEAD`. **A** is auto-detected from the
+    repository's remote default branch (via `origin/HEAD`, falling back to `origin/main` /
+    `origin/master` / the first remote branch when `origin/HEAD` isn't set).
+- **Git submenu** in the tool window tree's right-click menu, exposing the platform's standard
+  **Show History**, **Annotate**, **Compare with Branch**, and **Rollback** actions on the
+  selected file.
 - **Per-file reviewed state**, tracked independently per session, with a GitHub-style checkbox and
   a live `Reviewed n / m (xx%)` progress indicator.
 - **Automatic invalidation** — if a file you already reviewed changes again, it automatically
-  returns to unreviewed (a visual "changed after review" badge is planned for v0.2).
-- **Commit-durable review state** — in a Branch Range session, reviewing a file survives any number
-  of commits landing on *other* files. Only re-editing the reviewed file itself invalidates it.
+  returns to unreviewed (a visual "changed after review" badge is planned for a future release).
+- **Commit-durable review state** — in a Compare Refs session with **B** at `HEAD`, reviewing a
+  file survives any number of commits landing on *other* files. Only re-editing the reviewed file
+  itself invalidates it.
 - **Native diff viewer integration** — no custom diff renderer. Opening a file uses IntelliJ's
   built-in diff viewer as a full chain, so you can navigate between files without leaving the
   viewer.
@@ -48,10 +53,10 @@ the same review motion — file list → open → check as viewed → next — t
 |  | Built-in "Mark as Viewed" | Local Review plugin | **Git Local Review (this plugin)** |
 |---|---|---|---|
 | Works outside a GitHub PR | No — GitHub PR tool window only | Yes | **Yes** |
-| Diff sources | GitHub PR diff only | Working tree only | **Branch range (`base...HEAD`, PR-equivalent) + staged + working tree** |
+| Diff sources | GitHub PR diff only | Working tree only | **Any ref-to-ref comparison (branches, tags, commits) + staged + working tree** |
 | UX location | GitHub PR tool window | Decoration inside the Commit tool window | **Dedicated tool window, mirroring the GitHub PR review flow** |
-| State after commit | N/A (remote PR) | File disappears from the list | **Branch range sessions keep the reviewed state** |
-| Staging area | N/A | Not explicitly supported | **First-class session type** |
+| State after commit | N/A (remote PR) | File disappears from the list | **Compare Refs sessions (B = HEAD) keep the reviewed state** |
+| Staging area | N/A | Not explicitly supported | **First-class review mode** |
 
 ## Requirements
 
@@ -80,18 +85,22 @@ The installable zip is produced at `build/distributions/idea-git-local-review-<v
 
 1. Open the **Git Local Review** tool window (right sidebar).
 2. If your project has more than one git repository, pick one from the repo selector.
-3. Pick a session type — **Branch Range**, **Staged**, or **Working Tree**.
-4. For **Branch Range**, confirm or change the auto-detected base ref.
-5. Double-click a file (or press Enter) to open it in the diff viewer — you can navigate through
+3. Pick a **Mode** — **Local Changes** or **Compare Refs**.
+   - For **Local Changes**, pick a **Scope** — **Staged** or **Working Tree**.
+   - For **Compare Refs**, confirm or change ref **A** (auto-detected from the remote default
+     branch) and ref **B** (defaults to `HEAD`). Both accept local/remote branches and tags from
+     the dropdown, or a freely typed ref such as a commit hash.
+4. Double-click a file (or press Enter) to open it in the diff viewer — you can navigate through
    every file in the session from inside the viewer.
-6. Check a file off (click its checkbox, or press Space) to mark it reviewed, or use
+5. Check a file off (click its checkbox, or press Space) to mark it reviewed, or use
    **Mark Reviewed & Open Next** (⌃⌥⇧M) to mark the current file and jump straight to the next
    unreviewed one.
-7. Press **F4**, or right-click a file for **Show Diff** / **Edit Source** / **Mark Reviewed and
-   Open Next Unreviewed**, to jump to the actual source file or open its diff without leaving the
-   tree.
-8. Toggle **Unreviewed only** to hide files you've already checked off.
-9. The progress bar and `Reviewed n / m` label track how much of the session is done.
+6. Press **F4**, or right-click a file for **Show Diff** / **Edit Source** / **Mark Reviewed and
+   Open Next Unreviewed** / the **Git** submenu (**Show History**, **Annotate**,
+   **Compare with Branch**, **Rollback**), to jump to the actual source file, open its diff, or run
+   a standard VCS action on it without leaving the tree.
+7. Toggle **Unreviewed only** to hide files you've already checked off.
+8. The progress bar and `Reviewed n / m` label track how much of the session is done.
 
 ## License
 

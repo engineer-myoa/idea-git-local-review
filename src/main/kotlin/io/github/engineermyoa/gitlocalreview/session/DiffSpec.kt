@@ -3,8 +3,9 @@ package io.github.engineermyoa.gitlocalreview.session
 sealed interface DiffSpec {
     fun storageKey(): String
 
-    data class BranchRange(val baseRef: String) : DiffSpec {
-        override fun storageKey(): String = "range:$baseRef"
+    data class CompareRefs(val fromRef: String, val toRef: String) : DiffSpec {
+        override fun storageKey(): String =
+            if (toRef == "HEAD") "range:$fromRef" else "refs:$fromRef...$toRef"
     }
 
     data object Staged : DiffSpec {

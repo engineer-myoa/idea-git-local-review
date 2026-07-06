@@ -7,7 +7,6 @@ import com.intellij.openapi.vcs.changes.ChangeListManager
 import com.intellij.vcsUtil.VcsFileUtil
 import git4idea.GitContentRevision
 import git4idea.GitRevisionNumber
-import git4idea.GitUtil
 import git4idea.changes.GitChangeUtils
 import git4idea.commands.Git
 import git4idea.commands.GitCommand
@@ -27,7 +26,7 @@ class DiffProvider(private val project: Project) {
 
     fun collect(repository: GitRepository, spec: DiffSpec): DiffResult = try {
         when (spec) {
-            is DiffSpec.BranchRange -> collectBranchRange(repository, spec.baseRef)
+            is DiffSpec.CompareRefs -> collectCompareRefs(repository, spec.fromRef, spec.toRef)
             DiffSpec.Staged -> collectStaged(repository)
             DiffSpec.WorkingTree -> collectWorkingTree(repository)
         }
@@ -37,9 +36,9 @@ class DiffProvider(private val project: Project) {
         DiffResult.Failure(e.message ?: "git operation failed")
     }
 
-    private fun collectBranchRange(repository: GitRepository, baseRef: String): DiffResult {
-        val changes = GitChangeUtils.getThreeDotDiffOrThrow(repository, baseRef, GitUtil.HEAD)
-        val blobs = runGit(repository, GitCommand.LS_TREE, listOf("-r", "-z", GitUtil.HEAD))
+    private fun collectCompareRefs(repository: GitRepository, fromRef: String, toRef: String): DiffResult {
+        val changes = GitChangeUtils.getThreeDotDiffOrThrow(repository, fromRef, toRef)
+        val blobs = runGit(repository, GitCommand.LS_TREE, listOf("-r", "-z", toRef))
             .let(GitOutputParsers::parseLsTree)
         val files = changes.map { change ->
             val relPath = relativePath(repository, change)
@@ -80,6 +79,16 @@ class DiffProvider(private val project: Project) {
             .takeIf { it.startsWith("origin/") }
     } catch (e: VcsException) {
         null
+    }
+
+    fun listTags(repository: GitRepository): List<String> = try {
+        runGit(repository, GitCommand.TAG, listOf("--list"))
+            .lineSequence()
+            .map(String::trim)
+            .filter { it.isNotEmpty() }
+            .toList()
+    } catch (e: VcsException) {
+        emptyList()
     }
 
     private fun toChange(repository: GitRepository, diffChange: GitChangeUtils.GitDiffChange, indexBlobSha: String?): Change {

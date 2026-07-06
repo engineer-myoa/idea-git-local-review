@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class ReviewStateServiceTest {
-    private val key = SessionKey("/repo", DiffSpec.BranchRange("origin/main"))
+    private val key = SessionKey("/repo", DiffSpec.CompareRefs("origin/main", "HEAD"))
     private val otherKey = SessionKey("/repo", DiffSpec.Staged)
 
     @Test

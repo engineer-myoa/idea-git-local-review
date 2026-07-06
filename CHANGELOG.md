@@ -1,5 +1,23 @@
 ## [Unreleased]
 
+## [0.2.0]
+
+### Added
+- **Git** submenu in the tool window tree's right-click context menu, exposing the platform's
+  standard VCS actions on the selected file(s): **Show History**, **Annotate**,
+  **Compare with Branch**, and **Rollback**.
+- **Compare Refs** mode: pick any two refs (local/remote branches, tags, or typed commit hashes) as
+  **A** and **B** and review the diff between them, with **B** defaulting to `HEAD`. Tags are now
+  offered alongside branches in the ref pickers.
+
+### Changed
+- The tool window toolbar is restructured around two top-level modes, **Local Changes** and
+  **Compare Refs**, replacing the old three-way Branch Range / Staged / Working Tree selector.
+  **Local Changes** offers a **Staged** / **Working Tree** scope, matching the previous behavior of
+  those two session types. **Compare Refs** replaces Branch Range with a general **A** / **B** ref
+  comparison (**B** defaults to `HEAD`, reproducing the old `base...HEAD` behavior), so existing
+  Branch Range reviewed state is preserved and shown under Compare Refs with **B** set to `HEAD`.
+
 ## [0.1.1]
 
 ### Fixed

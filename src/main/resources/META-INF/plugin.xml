@@ -4,10 +4,10 @@
     <vendor url="https://github.com/engineer-myoa/idea-git-local-review">engineer-myoa</vendor>
     <description><![CDATA[
         <p>Review your changes like a pull request &mdash; before it exists.</p>
-        <p>Open a virtual pull request over any diff range &mdash; a branch range (<code>base...HEAD</code>, same as a GitHub PR),
-        the staging area, or the working tree &mdash; and track per-file reviewed state with GitHub-style viewed checks
-        in a dedicated tool window. Reviewed state survives commits, is invalidated automatically when a file changes
-        again, and is kept per diff range in your local workspace.</p>
+        <p>Open a virtual pull request over any diff range &mdash; a comparison between any two refs (<code>A...B</code>,
+        same as a GitHub PR when B is HEAD), the staging area, or the working tree &mdash; and track per-file reviewed
+        state with GitHub-style viewed checks in a dedicated tool window. Reviewed state survives commits, is
+        invalidated automatically when a file changes again, and is kept per diff range in your local workspace.</p>
     ]]></description>
     <depends>com.intellij.modules.platform</depends>
     <depends>Git4Idea</depends>

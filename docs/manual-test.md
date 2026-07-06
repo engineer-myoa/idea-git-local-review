@@ -1,4 +1,4 @@
-# Manual Test Checklist — Git Local Review v0.1
+# Manual Test Checklist — Git Local Review v0.2
 
 The automated test suite covers pure logic in `session/` and `git/` (fingerprinting, invalidation,
 `SessionKey` round-tripping, diff parsing). Everything below is UI-driven and requires a human
@@ -12,27 +12,29 @@ export JAVA_HOME=$(ls -d ~/.sdkman/candidates/java/21* | head -1)
 ```
 
 Open a project with real git history, and ideally with both staged changes and pending working
-tree edits, so all three session types have something to show. A repository with more than one
-commit and a remote (`origin`) branch is needed to exercise Branch Range base-ref auto-detection.
+tree edits, so both the **Local Changes** and **Compare Refs** modes have something to show. A
+repository with more than one commit, at least one tag, and a remote (`origin`) branch is needed
+to exercise Compare Refs ref auto-detection and the tag pickers.
 
 ## Checklist
 
 ### Session types
 
 - [ ] **① Staged session lists changed files** — Stage a handful of files (`git add`), open the
-      **Git Local Review** tool window, switch the session type to **Staged**, and verify every
-      staged file appears in the tree with the correct A/M/D status and directory grouping.
-- [ ] **④ Branch Range session (base auto-detect / manual)** — Switch the session type to
-      **Branch Range**. Verify the base ref combo auto-detects a sensible default (e.g.
-      `origin/develop` or `origin/main`). Then manually pick a different branch from the combo (or
-      type one in) and verify the file list updates to the new `base...HEAD` diff.
+      **Git Local Review** tool window, set **Mode** to **Local Changes** and **Scope** to
+      **Staged**, and verify every staged file appears in the tree with the correct A/M/D status
+      and directory grouping.
+- [ ] **④ Compare Refs mode (A auto-detect / manual)** — Switch **Mode** to **Compare Refs**.
+      Verify the **A** ref combo auto-detects a sensible default (e.g. `origin/develop` or
+      `origin/main`) and **B** defaults to `HEAD`. Then manually pick a different branch for **A**
+      from the combo (or type one in) and verify the file list updates to the new diff.
       Also test with a repository whose origin/HEAD points to a non-main default (e.g. develop):
-      run `git remote set-head origin develop`, reopen the panel, and verify the base combo
-      auto-selects origin/develop.
+      run `git remote set-head origin develop`, reopen the panel, and verify **A** auto-selects
+      origin/develop.
 
 ### Persistence & invalidation
 
-- [ ] **② Reviewed state survives an IDE restart** — In a Staged (or Branch Range) session, check
+- [ ] **② Reviewed state survives an IDE restart** — In a Staged (or Compare Refs) session, check
       off several files, restart the IDE (or re-run `runIde`), reopen the tool window on the same
       session, and confirm the same files are still shown as reviewed. This also validates the
       persisted-state XML round-trip (serialize on shutdown, deserialize on startup).
@@ -97,6 +99,31 @@ commit and a remote (`origin`) branch is needed to exercise Branch Range base-re
 - [ ] **⑭ Default docking on a fresh install** — Install the plugin fresh (or reset the tool window
       layout) and confirm the **Git Local Review** tool window docks on the **right** side of the
       IDE by default.
+
+### Git submenu (v0.2)
+
+- [ ] **⑮ Git submenu actions** — Right-click a file in the tree and open the **Git** submenu.
+      Confirm it lists **Show History**, **Annotate**, **Compare with Branch**, a separator, and
+      **Rollback**. Verify each opens the expected platform dialog/view for the selected file:
+      **Show History** opens the file history tool window, **Annotate** toggles the editor gutter
+      annotations (opening the file in the editor if it wasn't already), **Compare with Branch**
+      prompts for a branch and shows a diff, and **Rollback** (with a Working Tree or Staged
+      session showing an actual local modification selected) prompts to revert that file's local
+      changes.
+
+### Compare Refs (v0.2)
+
+- [ ] **⑯ Compare Refs A/B tag and commit-hash comparison** — In **Compare Refs** mode, confirm the
+      **A** and **B** combos both list local/remote branches and tags. Pick a tag for **A** and
+      leave **B** at `HEAD`, and verify the diff matches `git diff <tag>...HEAD`. Then type a raw
+      commit hash into **A** (or **B**) that isn't in the dropdown and confirm the diff updates
+      against that commit too.
+- [ ] **⑰ Upgraded Branch Range reviewed state carries over to Compare Refs (B = HEAD)** — Using a
+      workspace state persisted before this release (or by first reviewing files in Compare Refs
+      with **B** left at `HEAD`, then reopening the panel), confirm the previously reviewed files
+      for a given **A** ref still show as reviewed when **Mode** is **Compare Refs** and **B** is
+      `HEAD` — i.e. the storage key for `CompareRefs(a, "HEAD")` matches the old Branch Range
+      storage key for the same base ref.
 
 ## Reporting results
 

@@ -30,6 +30,7 @@ import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
+import git4idea.GitUtil
 import git4idea.repo.GitRepository
 import git4idea.repo.GitRepositoryManager
 import io.github.engineermyoa.gitlocalreview.actions.MarkReviewedAndOpenNextAction
@@ -49,22 +50,28 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
     private val controller = ReviewPanelController(project, ReviewPanelController.scope(project))
 
     private val repoCombo = ComboBox<GitRepository>()
-    private val specCombo = ComboBox<SpecOption>()
-    private val baseCombo = ComboBox<String>()
+    private val modeCombo = ComboBox<Mode>()
+    private val scopeCombo = ComboBox<Scope>()
+    private val fromRefLabel = JBLabel("A:")
+    private val fromRefCombo = ComboBox<String>()
+    private val toRefLabel = JBLabel("B:")
+    private val toRefCombo = ComboBox<String>()
     private val refreshButton = JButton("Refresh")
     private val unreviewedOnlyCheckBox = JBCheckBox("Unreviewed only")
     private val progressLabel = JBLabel()
     private val tree = AsyncChangesTreeImpl.Changes(project, true, false)
 
     private var applyingInclusion = false
-    private var populatingBaseCombo = false
+    private var populatingRefCombos = false
     private var updatingRepoCombo = false
     private var lastDisplayedSignature: List<Pair<String, String>> = emptyList()
 
     init {
         repoCombo.renderer = SimpleListCellRenderer.create("") { it.root.name }
-        specCombo.renderer = SimpleListCellRenderer.create("") { it.label }
-        baseCombo.isEditable = true
+        modeCombo.renderer = SimpleListCellRenderer.create("") { it.label }
+        scopeCombo.renderer = SimpleListCellRenderer.create("") { it.label }
+        fromRefCombo.isEditable = true
+        toRefCombo.isEditable = true
 
         toolbar = buildToolbar()
         setContent(JBScrollPane(tree))
@@ -81,8 +88,10 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         initializeSelection()
 
         repoCombo.addActionListener { onRepositorySelected() }
-        specCombo.addActionListener { onSpecChanged() }
-        baseCombo.addActionListener { onBaseChanged() }
+        modeCombo.addActionListener { onModeChanged() }
+        scopeCombo.addActionListener { onScopeChanged() }
+        fromRefCombo.addActionListener { onFromRefChanged() }
+        toRefCombo.addActionListener { onToRefChanged() }
 
         subscribeToModel()
         subscribeToRepositoryMappingChanges()
@@ -114,9 +123,12 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
     private fun buildToolbar(): JComponent {
         val comboRow = JPanel(FlowLayout(FlowLayout.LEFT, 4, 0)).apply {
             add(repoCombo)
-            add(specCombo)
-            add(JBLabel("Base:"))
-            add(baseCombo)
+            add(modeCombo)
+            add(scopeCombo)
+            add(fromRefLabel)
+            add(fromRefCombo)
+            add(toRefLabel)
+            add(toRefCombo)
             add(refreshButton)
         }
         val progressRow = JPanel(FlowLayout(FlowLayout.LEFT, 4, 0)).apply {
@@ -167,21 +179,23 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
     private fun initializeSelection() {
         val repositories = GitRepositoryManager.getInstance(project).repositories
         repoCombo.model = DefaultComboBoxModel(repositories.toTypedArray())
-        specCombo.model = DefaultComboBoxModel(SpecOption.entries.toTypedArray())
+        modeCombo.model = DefaultComboBoxModel(Mode.entries.toTypedArray())
+        modeCombo.selectedItem = Mode.COMPARE_REFS
+        scopeCombo.model = DefaultComboBoxModel(Scope.entries.toTypedArray())
         val repository = repositories.firstOrNull() ?: return
         initializeRepositorySelection(repository)
     }
 
     private fun initializeRepositorySelection(repository: GitRepository) {
-        populateBaseCombo(repository)
-        updateBaseComboEnabled()
+        populateRefCombos(repository)
+        updateModeControlsVisibility()
         selectSessionFromCombos()
     }
 
     private fun onRepositorySelected() {
         if (updatingRepoCombo) return
         val repository = selectedRepository() ?: return
-        populateBaseCombo(repository)
+        populateRefCombos(repository)
         selectSessionFromCombos()
     }
 
@@ -208,14 +222,23 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         if (restoredSelection == null) selectedRepository()?.let(::initializeRepositorySelection)
     }
 
-    private fun onSpecChanged() {
-        updateBaseComboEnabled()
+    private fun onModeChanged() {
+        updateModeControlsVisibility()
         selectSessionFromCombos()
     }
 
-    private fun onBaseChanged() {
-        if (populatingBaseCombo) return
-        if (currentSpecOption() == SpecOption.BRANCH_RANGE) selectSessionFromCombos()
+    private fun onScopeChanged() {
+        if (currentMode() == Mode.LOCAL_CHANGES) selectSessionFromCombos()
+    }
+
+    private fun onFromRefChanged() {
+        if (populatingRefCombos) return
+        if (currentMode() == Mode.COMPARE_REFS) selectSessionFromCombos()
+    }
+
+    private fun onToRefChanged() {
+        if (populatingRefCombos) return
+        if (currentMode() == Mode.COMPARE_REFS) selectSessionFromCombos()
     }
 
     private fun onRefreshRequested() {
@@ -229,31 +252,63 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
 
     private fun selectedRepository(): GitRepository? = repoCombo.selectedItem as? GitRepository
 
-    private fun currentSpecOption(): SpecOption = specCombo.selectedItem as? SpecOption ?: SpecOption.BRANCH_RANGE
+    private fun currentMode(): Mode = modeCombo.selectedItem as? Mode ?: Mode.LOCAL_CHANGES
+
+    private fun currentScope(): Scope = scopeCombo.selectedItem as? Scope ?: Scope.WORKING_TREE
 
     private fun currentSpec(): DiffSpec =
-        when (currentSpecOption()) {
-            SpecOption.BRANCH_RANGE -> DiffSpec.BranchRange(baseCombo.selectedItem as? String ?: "")
-            SpecOption.STAGED -> DiffSpec.Staged
-            SpecOption.WORKING_TREE -> DiffSpec.WorkingTree
+        when (currentMode()) {
+            Mode.LOCAL_CHANGES -> when (currentScope()) {
+                Scope.STAGED -> DiffSpec.Staged
+                Scope.WORKING_TREE -> DiffSpec.WorkingTree
+            }
+            Mode.COMPARE_REFS -> DiffSpec.CompareRefs(
+                fromRefCombo.selectedItem as? String ?: "",
+                toRefCombo.selectedItem as? String ?: GitUtil.HEAD
+            )
         }
 
-    private fun updateBaseComboEnabled() {
-        baseCombo.isEnabled = currentSpecOption() == SpecOption.BRANCH_RANGE
+    private fun updateModeControlsVisibility() {
+        val localChanges = currentMode() == Mode.LOCAL_CHANGES
+        scopeCombo.isVisible = localChanges
+        fromRefLabel.isVisible = !localChanges
+        fromRefCombo.isVisible = !localChanges
+        toRefLabel.isVisible = !localChanges
+        toRefCombo.isVisible = !localChanges
     }
 
-    private fun populateBaseCombo(repository: GitRepository) {
+    private fun populateRefCombos(repository: GitRepository) {
         val remoteNames = repository.branches.remoteBranches.map { it.name }
         val branchNames = (remoteNames + repository.branches.localBranches.map { it.name }).distinct().sorted()
         val heuristicDefault = heuristicDefaultBase(remoteNames)
-        populatingBaseCombo = true
-        try {
-            baseCombo.model = DefaultComboBoxModel(branchNames.toTypedArray())
-            baseCombo.selectedItem = heuristicDefault
-        } finally {
-            populatingBaseCombo = false
-        }
+        setRefComboModels(branchNames, heuristicDefault)
         detectRemoteHeadDefaultBase(repository, remoteNames, heuristicDefault)
+        loadTagsAsync(repository, branchNames, heuristicDefault)
+    }
+
+    private fun setRefComboModels(refNames: List<String>, fromRefDefault: String) {
+        populatingRefCombos = true
+        try {
+            val previousFrom = fromRefCombo.selectedItem as? String
+            val previousTo = toRefCombo.selectedItem as? String
+            fromRefCombo.model = DefaultComboBoxModel(refNames.toTypedArray())
+            fromRefCombo.selectedItem = previousFrom?.takeIf { it in refNames } ?: fromRefDefault
+            toRefCombo.model = DefaultComboBoxModel((listOf(GitUtil.HEAD) + refNames).toTypedArray())
+            toRefCombo.selectedItem = previousTo?.takeIf { it == GitUtil.HEAD || it in refNames } ?: GitUtil.HEAD
+        } finally {
+            populatingRefCombos = false
+        }
+    }
+
+    private fun loadTagsAsync(repository: GitRepository, branchNames: List<String>, heuristicDefault: String) {
+        ReviewPanelController.scope(project).launch(Dispatchers.Default) {
+            val tags = controller.listTags(repository)
+            if (tags.isEmpty()) return@launch
+            val refNames = (branchNames + tags).distinct().sorted()
+            ApplicationManager.getApplication().invokeLater {
+                if (selectedRepository() == repository) setRefComboModels(refNames, heuristicDefault)
+            }
+        }
     }
 
     private fun heuristicDefaultBase(remoteNames: List<String>): String =
@@ -274,14 +329,14 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
 
     private fun adoptDetectedBase(repository: GitRepository, expectedCurrent: String, detected: String) {
         if (selectedRepository() != repository) return
-        if (baseCombo.selectedItem != expectedCurrent) return
-        populatingBaseCombo = true
+        if (fromRefCombo.selectedItem != expectedCurrent) return
+        populatingRefCombos = true
         try {
-            baseCombo.selectedItem = detected
+            fromRefCombo.selectedItem = detected
         } finally {
-            populatingBaseCombo = false
+            populatingRefCombos = false
         }
-        if (currentSpecOption() == SpecOption.BRANCH_RANGE) selectSessionFromCombos()
+        if (currentMode() == Mode.COMPARE_REFS) selectSessionFromCombos()
     }
 
     private fun subscribeToModel() {
@@ -293,7 +348,7 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
     }
 
     private fun render(model: ReviewPanelController.UiModel) {
-        updateBaseComboEnabled()
+        updateModeControlsVisibility()
         val displayedFiles = displayedFiles(model)
         updateTreeContentIfChanged(displayedFiles)
         applyIncludedChanges(model)
@@ -371,8 +426,12 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
     private fun selectedNavigatables(): Array<Navigatable> =
         selectedAfterVirtualFiles().map { OpenFileDescriptor(project, it) }.toTypedArray()
 
-    private enum class SpecOption(val label: String) {
-        BRANCH_RANGE("Branch Range"),
+    private enum class Mode(val label: String) {
+        LOCAL_CHANGES("Local Changes"),
+        COMPARE_REFS("Compare Refs")
+    }
+
+    private enum class Scope(val label: String) {
         STAGED("Staged"),
         WORKING_TREE("Working Tree")
     }

@@ -89,6 +89,8 @@ class ReviewPanelController(private val project: Project, private val cs: Corout
 
     fun detectRemoteHeadBase(repository: GitRepository): String? = diffProvider.detectRemoteHeadBranch(repository)
 
+    fun listTags(repository: GitRepository): List<String> = diffProvider.listTags(repository)
+
     fun setViewed(files: List<ReviewFile>, viewed: Boolean) {
         val repository = model.value.repository ?: return
         val sessionKey = SessionKey(repository.root.path, model.value.spec)
