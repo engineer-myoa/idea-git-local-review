@@ -3,14 +3,17 @@ package io.github.engineermyoa.gitlocalreview.ui
 import com.intellij.dvcs.repo.VcsRepositoryManager
 import com.intellij.dvcs.repo.VcsRepositoryMappingListener
 import com.intellij.openapi.ListSelection
+import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.ActionUpdateThread
+import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataSink
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.IdeActions
+import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.DumbAwareAction
@@ -168,12 +171,22 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         add(buildGitSubmenu())
     }
 
-    private fun buildGitSubmenu(): DefaultActionGroup = DefaultActionGroup(GIT_SUBMENU_TEXT, true).apply {
-        ActionManager.getInstance().getAction(ACTION_SHOW_HISTORY)?.let(::add)
-        ActionManager.getInstance().getAction(ACTION_ANNOTATE)?.let(::add)
-        ActionManager.getInstance().getAction(ACTION_COMPARE_WITH_BRANCH)?.let(::add)
-        addSeparator()
-        ActionManager.getInstance().getAction(IdeActions.CHANGES_VIEW_ROLLBACK)?.let(::add)
+    private fun buildGitSubmenu(): ActionGroup = GitSubmenuActionGroup()
+
+    private inner class GitSubmenuActionGroup : ActionGroup(GIT_SUBMENU_TEXT, true) {
+        override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
+
+        override fun getChildren(e: AnActionEvent?): Array<AnAction> {
+            val actionManager = ActionManager.getInstance()
+            val vcsActions = listOfNotNull(
+                actionManager.getAction(ACTION_SHOW_HISTORY),
+                actionManager.getAction(ACTION_ANNOTATE),
+                actionManager.getAction(ACTION_COMPARE_WITH_BRANCH)
+            )
+            if (!controller.model.value.spec.isLocalChangesMode()) return vcsActions.toTypedArray()
+            val rollback = actionManager.getAction(IdeActions.CHANGES_VIEW_ROLLBACK) ?: return vcsActions.toTypedArray()
+            return (vcsActions + Separator.create() + rollback).toTypedArray()
+        }
     }
 
     private fun initializeSelection() {
@@ -292,23 +305,37 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
             val previousFrom = fromRefCombo.selectedItem as? String
             val previousTo = toRefCombo.selectedItem as? String
             fromRefCombo.model = DefaultComboBoxModel(refNames.toTypedArray())
-            fromRefCombo.selectedItem = previousFrom?.takeIf { it in refNames } ?: fromRefDefault
+            fromRefCombo.selectedItem = previousFrom ?: fromRefDefault
             toRefCombo.model = DefaultComboBoxModel((listOf(GitUtil.HEAD) + refNames).toTypedArray())
-            toRefCombo.selectedItem = previousTo?.takeIf { it == GitUtil.HEAD || it in refNames } ?: GitUtil.HEAD
+            toRefCombo.selectedItem = previousTo ?: GitUtil.HEAD
         } finally {
             populatingRefCombos = false
         }
     }
 
     private fun loadTagsAsync(repository: GitRepository, branchNames: List<String>, heuristicDefault: String) {
+        val expectedFrom = fromRefCombo.selectedItem as? String
+        val expectedTo = toRefCombo.selectedItem as? String
         ReviewPanelController.scope(project).launch(Dispatchers.Default) {
             val tags = controller.listTags(repository)
             if (tags.isEmpty()) return@launch
             val refNames = (branchNames + tags).distinct().sorted()
             ApplicationManager.getApplication().invokeLater {
-                if (selectedRepository() == repository) setRefComboModels(refNames, heuristicDefault)
+                mergeTagsIntoRefCombos(repository, refNames, heuristicDefault, expectedFrom, expectedTo)
             }
         }
+    }
+
+    private fun mergeTagsIntoRefCombos(
+        repository: GitRepository,
+        refNames: List<String>,
+        heuristicDefault: String,
+        expectedFrom: String?,
+        expectedTo: String?
+    ) {
+        if (selectedRepository() != repository) return
+        if (fromRefCombo.selectedItem != expectedFrom || toRefCombo.selectedItem != expectedTo) return
+        setRefComboModels(refNames, heuristicDefault)
     }
 
     private fun heuristicDefaultBase(remoteNames: List<String>): String =

@@ -26,4 +26,11 @@ class DiffSpecTest {
         val key = SessionKey("/repo/a", DiffSpec.CompareRefs("origin/main", "HEAD"))
         assertEquals("/repo/a|range:origin/main", key.asString())
     }
+
+    @Test
+    fun `only staged and working tree specs are local changes mode`() {
+        assertEquals(true, DiffSpec.Staged.isLocalChangesMode())
+        assertEquals(true, DiffSpec.WorkingTree.isLocalChangesMode())
+        assertEquals(false, DiffSpec.CompareRefs("origin/main", "HEAD").isLocalChangesMode())
+    }
 }
