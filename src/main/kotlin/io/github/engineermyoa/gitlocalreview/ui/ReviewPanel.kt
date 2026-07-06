@@ -15,6 +15,7 @@ import com.intellij.openapi.vcs.changes.Change
 import com.intellij.openapi.vcs.changes.actions.diff.ShowDiffAction
 import com.intellij.openapi.vcs.changes.actions.diff.ShowDiffContext
 import com.intellij.openapi.vcs.changes.ui.AsyncChangesTreeImpl
+import com.intellij.openapi.vcs.changes.ui.ChangesTree
 import com.intellij.openapi.vcs.changes.ui.VcsTreeModelData
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBCheckBox
@@ -49,6 +50,7 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
     private var applyingInclusion = false
     private var populatingBaseCombo = false
     private var updatingRepoCombo = false
+    private var lastDisplayedSignature: List<Pair<String, String>> = emptyList()
 
     init {
         repoCombo.renderer = SimpleListCellRenderer.create("") { it.root.name }
@@ -58,6 +60,7 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         toolbar = buildToolbar()
         setContent(JBScrollPane(tree))
 
+        tree.setTreeStateStrategy(ChangesTree.KEEP_NON_EMPTY)
         tree.setDoubleClickAndEnterKeyHandler { openSelectedDiff() }
         tree.setInclusionListener { onInclusionChanged() }
         unreviewedOnlyCheckBox.addActionListener { render(controller.model.value) }
@@ -251,7 +254,7 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
     private fun render(model: ReviewPanelController.UiModel) {
         updateBaseComboEnabled()
         val displayedFiles = displayedFiles(model)
-        tree.setChangesToDisplay(displayedFiles.map { it.change })
+        updateTreeContentIfChanged(displayedFiles)
         applyIncludedChanges(model)
         updateProgressLabel(model)
         updateEmptyText(model, displayedFiles.size)
@@ -259,6 +262,13 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
 
     private fun displayedFiles(model: ReviewPanelController.UiModel): List<ReviewFile> =
         if (unreviewedOnlyCheckBox.isSelected) model.files.filterNot { it.relPath in model.reviewedPaths } else model.files
+
+    private fun updateTreeContentIfChanged(displayedFiles: List<ReviewFile>) {
+        val signature = displayedFiles.map { it.relPath to it.fingerprint }
+        if (signature == lastDisplayedSignature) return
+        lastDisplayedSignature = signature
+        tree.setChangesToDisplay(displayedFiles.map { it.change })
+    }
 
     private fun applyIncludedChanges(model: ReviewPanelController.UiModel) {
         applyingInclusion = true
