@@ -17,12 +17,14 @@ import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import com.intellij.openapi.vcs.VcsDataKeys
 import com.intellij.openapi.vcs.changes.Change
 import com.intellij.openapi.vcs.changes.actions.diff.ShowDiffAction
 import com.intellij.openapi.vcs.changes.actions.diff.ShowDiffContext
 import com.intellij.openapi.vcs.changes.ui.AsyncChangesTreeImpl
 import com.intellij.openapi.vcs.changes.ui.ChangesTree
 import com.intellij.openapi.vcs.changes.ui.VcsTreeModelData
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.pom.Navigatable
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBCheckBox
@@ -91,6 +93,11 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         sink.set(ReviewPanelController.DATA_KEY, controller)
         sink.set(ReviewPanelController.SELECTED_REL_PATH, selectedRelPath())
         sink.set(CommonDataKeys.NAVIGATABLE_ARRAY, selectedNavigatables())
+        val virtualFiles = selectedAfterVirtualFiles()
+        sink.set(CommonDataKeys.VIRTUAL_FILE, virtualFiles.firstOrNull())
+        sink.set(CommonDataKeys.VIRTUAL_FILE_ARRAY, virtualFiles.takeIf { it.isNotEmpty() }?.toTypedArray())
+        sink.set(VcsDataKeys.VIRTUAL_FILES, virtualFiles.takeIf { it.isNotEmpty() }?.asIterable())
+        sink.set(VcsDataKeys.CHANGES, selectedChanges().takeIf { it.isNotEmpty() }?.toTypedArray())
     }
 
     fun openDiffAt(files: List<ReviewFile>, startRelPath: String?) {
@@ -145,6 +152,16 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         addSeparator()
         ActionManager.getInstance().getAction(IdeActions.ACTION_EDIT_SOURCE)?.let(::add)
         ActionManager.getInstance().getAction(MarkReviewedAndOpenNextAction.ACTION_ID)?.let(::add)
+        addSeparator()
+        add(buildGitSubmenu())
+    }
+
+    private fun buildGitSubmenu(): DefaultActionGroup = DefaultActionGroup(GIT_SUBMENU_TEXT, true).apply {
+        ActionManager.getInstance().getAction(ACTION_SHOW_HISTORY)?.let(::add)
+        ActionManager.getInstance().getAction(ACTION_ANNOTATE)?.let(::add)
+        ActionManager.getInstance().getAction(ACTION_COMPARE_WITH_BRANCH)?.let(::add)
+        addSeparator()
+        ActionManager.getInstance().getAction(IdeActions.CHANGES_VIEW_ROLLBACK)?.let(::add)
     }
 
     private fun initializeSelection() {
@@ -348,16 +365,22 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         return controller.model.value.files.firstOrNull { it.change == change }?.relPath
     }
 
-    private fun selectedNavigatables(): Array<Navigatable> {
-        val navigatables: List<Navigatable> = selectedChanges().mapNotNull { change ->
-            change.afterRevision?.file?.virtualFile?.let { OpenFileDescriptor(project, it) }
-        }
-        return navigatables.toTypedArray()
-    }
+    private fun selectedAfterVirtualFiles(): List<VirtualFile> =
+        selectedChanges().mapNotNull { it.afterRevision?.file?.virtualFile }
+
+    private fun selectedNavigatables(): Array<Navigatable> =
+        selectedAfterVirtualFiles().map { OpenFileDescriptor(project, it) }.toTypedArray()
 
     private enum class SpecOption(val label: String) {
         BRANCH_RANGE("Branch Range"),
         STAGED("Staged"),
         WORKING_TREE("Working Tree")
+    }
+
+    private companion object {
+        const val GIT_SUBMENU_TEXT = "Git"
+        const val ACTION_SHOW_HISTORY = "Vcs.ShowTabbedFileHistory"
+        const val ACTION_ANNOTATE = "Annotate"
+        const val ACTION_COMPARE_WITH_BRANCH = "Git.CompareWithBranch"
     }
 }
