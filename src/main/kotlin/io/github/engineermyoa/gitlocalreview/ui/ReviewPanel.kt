@@ -5,9 +5,15 @@ import com.intellij.dvcs.repo.VcsRepositoryMappingListener
 import com.intellij.openapi.ListSelection
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.ActionUpdateThread
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataSink
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.actionSystem.IdeActions
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.fileEditor.OpenFileDescriptor
+import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.SimpleToolWindowPanel
@@ -17,6 +23,7 @@ import com.intellij.openapi.vcs.changes.actions.diff.ShowDiffContext
 import com.intellij.openapi.vcs.changes.ui.AsyncChangesTreeImpl
 import com.intellij.openapi.vcs.changes.ui.ChangesTree
 import com.intellij.openapi.vcs.changes.ui.VcsTreeModelData
+import com.intellij.pom.Navigatable
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
@@ -63,6 +70,7 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         tree.setTreeStateStrategy(ChangesTree.KEEP_NON_EMPTY)
         tree.setDoubleClickAndEnterKeyHandler { openSelectedDiff() }
         tree.setInclusionListener { onInclusionChanged() }
+        tree.installPopupHandler(buildTreePopupGroup())
         unreviewedOnlyCheckBox.addActionListener { render(controller.model.value) }
         refreshButton.addActionListener { onRefreshRequested() }
 
@@ -82,6 +90,7 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         super.uiDataSnapshot(sink)
         sink.set(ReviewPanelController.DATA_KEY, controller)
         sink.set(ReviewPanelController.SELECTED_REL_PATH, selectedRelPath())
+        sink.set(CommonDataKeys.NAVIGATABLE_ARRAY, selectedNavigatables())
     }
 
     fun openDiffAt(files: List<ReviewFile>, startRelPath: String?) {
@@ -121,6 +130,21 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         val actionToolbar = ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLWINDOW_CONTENT, group, true)
         actionToolbar.targetComponent = this
         return actionToolbar.component
+    }
+
+    private fun buildTreePopupGroup(): DefaultActionGroup = DefaultActionGroup().apply {
+        add(object : DumbAwareAction("Show Diff") {
+            override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
+
+            override fun update(e: AnActionEvent) {
+                e.presentation.isEnabled = selectedChange() != null
+            }
+
+            override fun actionPerformed(e: AnActionEvent) = openSelectedDiff()
+        })
+        addSeparator()
+        ActionManager.getInstance().getAction(IdeActions.ACTION_EDIT_SOURCE)?.let(::add)
+        ActionManager.getInstance().getAction(MarkReviewedAndOpenNextAction.ACTION_ID)?.let(::add)
     }
 
     private fun initializeSelection() {
@@ -315,11 +339,20 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         openDiffAt(files, files.firstOrNull { it.change == change }?.relPath)
     }
 
-    private fun selectedChange(): Change? = VcsTreeModelData.selected(tree).userObjects(Change::class.java).firstOrNull()
+    private fun selectedChanges(): List<Change> = VcsTreeModelData.selected(tree).userObjects(Change::class.java)
+
+    private fun selectedChange(): Change? = selectedChanges().firstOrNull()
 
     private fun selectedRelPath(): String? {
         val change = selectedChange() ?: return null
         return controller.model.value.files.firstOrNull { it.change == change }?.relPath
+    }
+
+    private fun selectedNavigatables(): Array<Navigatable> {
+        val navigatables: List<Navigatable> = selectedChanges().mapNotNull { change ->
+            change.afterRevision?.file?.virtualFile?.let { OpenFileDescriptor(project, it) }
+        }
+        return navigatables.toTypedArray()
     }
 
     private enum class SpecOption(val label: String) {

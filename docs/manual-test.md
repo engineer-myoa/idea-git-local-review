@@ -82,6 +82,22 @@ commit and a remote (`origin`) branch is needed to exercise Branch Range base-re
       disabled-but-visible affordance would communicate the action's existence more clearly. This
       is a UX trade-off to revisit in v0.2, not a bug to fix now.
 
+### Tree state & navigation
+
+- [ ] **⑫ Folder expansion survives a checkbox toggle** — In a session with files spread across
+      multiple directories, expand two or three folders in the tree, then check off (or uncheck) a
+      file's reviewed checkbox in a *different* folder, and also try **Mark Reviewed and Open Next
+      Unreviewed**. Confirm the folders you expanded stay expanded — only the toggled file's own
+      row changes.
+- [ ] **⑬ F4 and right-click Jump to Source** — Select a file in the tree and press **F4**. Confirm
+      it opens the file directly in the editor at its current on-disk location (not a diff view).
+      Then right-click a file and confirm the context menu shows **Show Diff**, **Edit Source**, and
+      **Mark Reviewed and Open Next Unreviewed**; verify **Edit Source** from that menu does the
+      same as F4, and **Show Diff** opens the same diff chain as double-click.
+- [ ] **⑭ Default docking on a fresh install** — Install the plugin fresh (or reset the tool window
+      layout) and confirm the **Git Local Review** tool window docks on the **right** side of the
+      IDE by default.
+
 ## Reporting results
 
 When running this checklist, record the IDE build/version used and pass/fail per item so any

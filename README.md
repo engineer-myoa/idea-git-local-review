@@ -78,7 +78,7 @@ The installable zip is produced at `build/distributions/idea-git-local-review-<v
 
 ## Usage
 
-1. Open the **Git Local Review** tool window (left sidebar).
+1. Open the **Git Local Review** tool window (right sidebar).
 2. If your project has more than one git repository, pick one from the repo selector.
 3. Pick a session type — **Branch Range**, **Staged**, or **Working Tree**.
 4. For **Branch Range**, confirm or change the auto-detected base ref.
@@ -87,8 +87,11 @@ The installable zip is produced at `build/distributions/idea-git-local-review-<v
 6. Check a file off (click its checkbox, or press Space) to mark it reviewed, or use
    **Mark Reviewed & Open Next** (⌃⌥⇧M) to mark the current file and jump straight to the next
    unreviewed one.
-7. Toggle **Unreviewed only** to hide files you've already checked off.
-8. The progress bar and `Reviewed n / m` label track how much of the session is done.
+7. Press **F4**, or right-click a file for **Show Diff** / **Edit Source** / **Mark Reviewed and
+   Open Next Unreviewed**, to jump to the actual source file or open its diff without leaving the
+   tree.
+8. Toggle **Unreviewed only** to hide files you've already checked off.
+9. The progress bar and `Reviewed n / m` label track how much of the session is done.
 
 ## License
 

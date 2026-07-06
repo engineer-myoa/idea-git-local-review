@@ -1,5 +1,22 @@
 ## [Unreleased]
 
+## [0.1.1]
+
+### Fixed
+- Toggling a file's reviewed checkbox (or using Mark Reviewed & Open Next) no longer collapses
+  other expanded folders in the tool window tree. The tree now only rebuilds when the displayed
+  file list actually changes, and preserves the tree's expansion state across rebuilds that do
+  change the list.
+
+### Added
+- Jump to Source: press **F4** (or use **Edit Source** from the right-click menu) on a selected
+  file to open it directly in the editor, at its current on-disk location.
+- Right-click context menu on the tool window tree with **Show Diff**, **Edit Source**, and
+  **Mark Reviewed and Open Next Unreviewed**.
+
+### Changed
+- The tool window's default anchor is now **right** instead of **left**.
+
 ## [0.1.0]
 
 ### Added
