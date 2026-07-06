@@ -176,15 +176,13 @@ class ReviewPanelController(private val project: Project, private val cs: Corout
             VirtualFileManager.VFS_CHANGES,
             object : BulkFileListener {
                 override fun after(events: MutableList<out VFileEvent>) {
-                    if (model.value.repository != null && isFileSystemBackedSpec(model.value.spec)) {
+                    if (model.value.repository != null && model.value.spec.isLocalChangesMode()) {
                         refreshTrigger.tryEmit(Unit)
                     }
                 }
             }
         )
     }
-
-    private fun isFileSystemBackedSpec(spec: DiffSpec): Boolean = spec == DiffSpec.Staged || spec == DiffSpec.WorkingTree
 
     companion object {
         private const val DEBOUNCE_MILLIS = 500

@@ -334,7 +334,6 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         expectedTo: String?
     ) {
         if (selectedRepository() != repository) return
-        if (fromRefCombo.selectedItem != expectedFrom || toRefCombo.selectedItem != expectedTo) return
         setRefComboModels(refNames, heuristicDefault)
     }
 
