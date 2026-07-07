@@ -1,7 +1,6 @@
 package io.github.engineermyoa.gitlocalreview.ui
 
 import com.intellij.openapi.actionSystem.DataKey
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
@@ -41,8 +40,6 @@ class ReviewPanelController(private val project: Project, private val cs: Corout
         val repository: GitRepository?,
         val spec: DiffSpec
     )
-
-    var openDiffRequest: ((List<ReviewFile>, String) -> Unit)? = null
 
     private val diffProvider = DiffProvider(project)
     private val stateService = ReviewStateService.getInstance(project)
@@ -103,23 +100,9 @@ class ReviewPanelController(private val project: Project, private val cs: Corout
         }
     }
 
-    fun nextUnreviewed(afterRelPath: String?): ReviewFile? {
-        val current = model.value
-        val startIndex = afterRelPath?.let { path ->
-            val index = current.files.indexOfFirst { it.relPath == path }
-            if (index < 0) 0 else index + 1
-        } ?: 0
-        return current.files.drop(startIndex).firstOrNull { it.relPath !in current.reviewedPaths }
-    }
-
-    fun markReviewedAndOpenNext(relPath: String) {
+    fun toggleReviewed(relPath: String) {
         val file = model.value.files.firstOrNull { it.relPath == relPath } ?: return
-        setViewed(listOf(file), true)
-        val next = nextUnreviewed(relPath) ?: return
-        val files = model.value.files
-        ApplicationManager.getApplication().invokeLater {
-            openDiffRequest?.invoke(files, next.relPath)
-        }
+        setViewed(listOf(file), relPath !in model.value.reviewedPaths)
     }
 
     private fun applyResult(repository: GitRepository, spec: DiffSpec, result: DiffResult) {
