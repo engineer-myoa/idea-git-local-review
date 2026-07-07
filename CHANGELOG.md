@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+## [0.3.1]
+
+### Changed
+- The **Mark as Reviewed** diff toolbar button moved earlier in the toolbar, next to the file
+  navigation arrows' block rather than trailing after it — it's now registered declaratively on
+  the platform's `Diff.ViewerToolbar` extension point instead of being injected per diff request.
+
 ## [0.3.0]
 
 ### Added

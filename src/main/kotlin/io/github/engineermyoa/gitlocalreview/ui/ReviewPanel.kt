@@ -118,7 +118,6 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
             context.putChangeContext(rf.change, ReviewPanelController.REL_PATH_KEY, rf.relPath)
             context.putChangeContext(rf.change, ReviewPanelController.CONTROLLER_KEY, controller)
         }
-        ActionManager.getInstance().getAction(ToggleReviewedAction.ACTION_ID)?.let(context::addAction)
         ShowDiffAction.showDiffForChange(project, ListSelection.createAt(files.map { it.change }, index), context)
     }
 

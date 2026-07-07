@@ -57,11 +57,15 @@ to exercise Compare Refs ref auto-detection and the tag pickers.
       file (no automatic navigation). Trigger the action again (menu now reads **Unmark as
       Reviewed**) and confirm the file is unchecked.
 - [ ] **⑦ Diff viewer toolbar button** — With a diff open, confirm a **Mark as Reviewed** button is
-      visible in the diff toolbar (not just the context menu). Click it and confirm it toggles the
-      same reviewed state as ⑥, with its icon/text reflecting the pressed/selected state once
-      reviewed. Then use the diff viewer's own previous/next arrows to move to a different file in
-      the chain and confirm the button's label and pressed state update to reflect *that* file's
-      reviewed status (not the one you just toggled).
+      visible in the diff toolbar (not just the context menu), positioned with the diff viewer's
+      own per-file controls near the file navigation arrows rather than at the far end of the
+      toolbar. Click it and confirm it toggles the same reviewed state as ⑥, with its icon/text
+      reflecting the pressed/selected state once reviewed. Then use the diff viewer's own
+      previous/next arrows to move to a different file in the chain and confirm the button's label
+      and pressed state update to reflect *that* file's reviewed status (not the one you just
+      toggled). Also open a diff from outside this plugin (e.g. a commit in **Git** → **Show
+      History**, or **VCS** → **Compare with Branch**) and confirm the button does not appear
+      there.
 - [ ] **⑧ Toggle from the toolbar / tree selection** — Without opening a diff, select a file in the
       tool window tree and trigger **Mark as Reviewed** from the tool window toolbar button. Confirm
       it toggles that file's reviewed state the same way as ⑥, with no diff opened.

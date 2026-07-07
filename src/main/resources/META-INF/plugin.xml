@@ -22,6 +22,7 @@
                 description="Toggle the reviewed state of the current file">
             <keyboard-shortcut first-keystroke="control alt shift M" keymap="$default"/>
             <add-to-group group-id="Diff.EditorPopupMenu" anchor="last"/>
+            <add-to-group group-id="Diff.ViewerToolbar" anchor="first"/>
         </action>
     </actions>
 </idea-plugin>
