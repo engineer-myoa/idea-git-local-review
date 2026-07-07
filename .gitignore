@@ -4,3 +4,4 @@ build/
 .intellijPlatform/
 .idea/
 !.idea/icon.png
+docs/superpowers/
