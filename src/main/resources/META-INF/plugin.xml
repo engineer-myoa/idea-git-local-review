@@ -1,0 +1,27 @@
+<idea-plugin>
+    <id>io.github.engineermyoa.gitlocalreview</id>
+    <name>Git Local Review</name>
+    <vendor url="https://github.com/engineer-myoa/idea-git-local-review">engineer-myoa</vendor>
+    <description><![CDATA[
+        <p>Review your changes like a pull request &mdash; before it exists.</p>
+        <p>Open a virtual pull request over any diff range &mdash; a comparison between any two refs (<code>A...B</code>,
+        same as a GitHub PR when B is HEAD), the staging area, or the working tree &mdash; and track per-file reviewed
+        state with GitHub-style viewed checks in a dedicated tool window. Reviewed state survives commits, is
+        invalidated automatically when a file changes again, and is kept per diff range in your local workspace.</p>
+    ]]></description>
+    <depends>com.intellij.modules.platform</depends>
+    <depends>Git4Idea</depends>
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="Git Local Review" anchor="right"
+                    factoryClass="io.github.engineermyoa.gitlocalreview.ui.ReviewToolWindowFactory"/>
+    </extensions>
+    <actions>
+        <action id="GitLocalReview.MarkReviewedAndOpenNext"
+                class="io.github.engineermyoa.gitlocalreview.actions.MarkReviewedAndOpenNextAction"
+                text="Mark Reviewed and Open Next Unreviewed"
+                description="Mark the current file as reviewed and open the next unreviewed file">
+            <keyboard-shortcut first-keystroke="control alt shift M" keymap="$default"/>
+            <add-to-group group-id="Diff.EditorPopupMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>
