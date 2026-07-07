@@ -4,7 +4,9 @@
 
 Git Local Review is an IntelliJ-platform plugin that adds a dedicated review tool window with GitHub-style per-file *viewed* tracking for any local diff — staged changes, the working tree, or any two refs (`A...B`, the same diff a PR would show).
 
-> 📸 Screenshots coming soon.
+![Review tool window with per-file viewed checkboxes](docs/images/review-panel.png)
+
+![Reviewing a file in the native diff viewer](docs/images/diff-viewer.png)
 
 ## Features
 
