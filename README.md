@@ -14,7 +14,7 @@ Git Local Review is an IntelliJ-platform plugin that adds a dedicated review too
   - **Local Changes** — review the staging area or working tree before you commit
   - **Compare Refs** — review `A...B` between any branches, tags, or commit hashes (merge-base diff, identical to a GitHub PR)
 - **Viewed checks that actually track content** — each check stores a content fingerprint; state survives commits and restarts, and automatically resets when a file changes again
-- **Native diff experience** — files open in the built-in diff viewer as a chain; `Mark Reviewed and Open Next Unreviewed` (<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Shift</kbd><kbd>M</kbd>) keeps the flow going
+- **Native diff experience** — files open in the built-in diff viewer as a chain; `Mark as Reviewed` (<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Shift</kbd><kbd>M</kbd>) toggles the current file's state right from the diff toolbar or context menu, and the viewer's own arrows move between files
 - **Navigation & Git actions** — jump to source (<kbd>F4</kbd>), context menu with Show History, Annotate, Compare with Branch, Rollback
 - Review state is stored per diff range in your local workspace — never committed, never shared
 

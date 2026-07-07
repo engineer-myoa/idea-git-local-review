@@ -1,4 +1,4 @@
-# Manual Test Checklist — Git Local Review v0.2
+# Manual Test Checklist — Git Local Review v0.3
 
 The automated test suite covers pure logic in `session/` and `git/` (fingerprinting, invalidation,
 `SessionKey` round-tripping, diff parsing). Everything below is UI-driven and requires a human
@@ -49,19 +49,22 @@ to exercise Compare Refs ref auto-detection and the tag pickers.
       previous/next file in the session from inside the viewer, without going back to the tool
       window.
 
-### Mark Reviewed & Open Next
+### Mark as Reviewed toggle
 
-- [ ] **⑥ Mark & Next from the diff viewer** — With a diff open, right-click inside it and choose
-      **Mark Reviewed and Open Next Unreviewed** (or press **⌃⌥⇧M** /
-      `Control+Alt+Shift+M`). Confirm the current file is checked off in the tool window tree and a
-      new diff chain opens at the next unreviewed file.
-- [ ] **⑦ Mark & Next on the last unreviewed file** — Repeat until exactly one unreviewed file
-      remains, then trigger Mark & Next on it. Confirm it is a no-op beyond marking that file
-      reviewed (no new diff is opened) and the tool window's progress label reads 100%.
-- [ ] **⑧ Mark & Next from the toolbar / tree selection** — Without opening a diff, select a file
-      in the tool window tree and trigger **Mark Reviewed and Open Next Unreviewed** from the tool
-      window toolbar button. Confirm it dispatches using the tree selection and produces the same
-      result as the diff-viewer path (⑥).
+- [ ] **⑥ Toggle from the diff viewer context menu / shortcut** — With a diff open, right-click
+      inside it and choose **Mark as Reviewed** (or press **⌃⌥⇧M** / `Control+Alt+Shift+M`). Confirm
+      the current file is checked off in the tool window tree and the diff stays open on the same
+      file (no automatic navigation). Trigger the action again (menu now reads **Unmark as
+      Reviewed**) and confirm the file is unchecked.
+- [ ] **⑦ Diff viewer toolbar button** — With a diff open, confirm a **Mark as Reviewed** button is
+      visible in the diff toolbar (not just the context menu). Click it and confirm it toggles the
+      same reviewed state as ⑥, with its icon/text reflecting the pressed/selected state once
+      reviewed. Then use the diff viewer's own previous/next arrows to move to a different file in
+      the chain and confirm the button's label and pressed state update to reflect *that* file's
+      reviewed status (not the one you just toggled).
+- [ ] **⑧ Toggle from the toolbar / tree selection** — Without opening a diff, select a file in the
+      tool window tree and trigger **Mark as Reviewed** from the tool window toolbar button. Confirm
+      it toggles that file's reviewed state the same way as ⑥, with no diff opened.
 
 ### Filtering
 
@@ -76,26 +79,26 @@ to exercise Compare Refs ref auto-detection and the tag pickers.
       correspond to the newly selected repository, and that each root's state is independent (e.g.
       reviewed files in one root are not shown as reviewed in another).
 
-### Known UX observation (v0.2 candidate — not a defect)
+### Known UX observation (not a defect)
 
 - [ ] **⑪ Toolbar button visibility with no selection** — With nothing selected in the tree and no
-      diff open, observe that the Mark Reviewed & Open Next toolbar button *disappears* rather than
+      diff open, observe that the **Mark as Reviewed** toolbar button *disappears* rather than
       appearing disabled (current behavior: `isEnabledAndVisible = false`). Note whether a
       disabled-but-visible affordance would communicate the action's existence more clearly. This
-      is a UX trade-off to revisit in v0.2, not a bug to fix now.
+      remains a UX trade-off to revisit, not a bug to fix now.
 
 ### Tree state & navigation
 
 - [ ] **⑫ Folder expansion survives a checkbox toggle** — In a session with files spread across
       multiple directories, expand two or three folders in the tree, then check off (or uncheck) a
-      file's reviewed checkbox in a *different* folder, and also try **Mark Reviewed and Open Next
-      Unreviewed**. Confirm the folders you expanded stay expanded — only the toggled file's own
-      row changes.
+      file's reviewed checkbox in a *different* folder, and also try **Mark as Reviewed** from the
+      tree context menu. Confirm the folders you expanded stay expanded — only the toggled file's
+      own row changes.
 - [ ] **⑬ F4 and right-click Jump to Source** — Select a file in the tree and press **F4**. Confirm
       it opens the file directly in the editor at its current on-disk location (not a diff view).
       Then right-click a file and confirm the context menu shows **Show Diff**, **Edit Source**, and
-      **Mark Reviewed and Open Next Unreviewed**; verify **Edit Source** from that menu does the
-      same as F4, and **Show Diff** opens the same diff chain as double-click.
+      **Mark as Reviewed**; verify **Edit Source** from that menu does the same as F4, and
+      **Show Diff** opens the same diff chain as double-click.
 - [ ] **⑭ Default docking on a fresh install** — Install the plugin fresh (or reset the tool window
       layout) and confirm the **Git Local Review** tool window docks on the **right** side of the
       IDE by default.

@@ -1,5 +1,26 @@
 ## [Unreleased]
 
+## [0.3.0]
+
+### Added
+- A **Mark as Reviewed** button in the native diff viewer's toolbar, so the reviewed state can be
+  toggled without leaving the diff or reaching for the context menu.
+- A tool window icon (monochrome, light/dark variants) for the **Git Local Review** stripe button.
+
+### Changed
+- **Mark Reviewed and Open Next Unreviewed** is replaced by **Mark as Reviewed**, a plain toggle of
+  the current file's reviewed state with no automatic navigation. Its label flips to
+  **Unmark as Reviewed** when the current file is already reviewed. Navigating between files is now
+  always done manually, with the diff viewer's own previous/next controls.
+
+### Removed
+- Mark-and-open-next behavior and the `nextUnreviewed` navigation helper. Automatic navigation on
+  mark was a source of surprise when reviewing out of order; manual navigation is simpler and more
+  predictable.
+- Note: the action id changed from `GitLocalReview.MarkReviewedAndOpenNext` to
+  `GitLocalReview.ToggleReviewed`. If you customized the shortcut in Settings → Keymap, reassign it
+  to the new action; the default Ctrl+Alt+Shift+M is unaffected.
+
 ## [0.2.0]
 
 ### Added
