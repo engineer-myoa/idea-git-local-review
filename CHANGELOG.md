@@ -1,5 +1,17 @@
 ## [Unreleased]
 
+## [0.3.1]
+
+### Changed
+- The **Mark as Reviewed** diff toolbar button moved earlier in the toolbar, next to the file
+  navigation arrows' block rather than trailing after it — it's now registered declaratively on
+  the platform's `Diff.ViewerToolbar` extension point instead of being injected per diff request.
+
+### Fixed
+- The tool window toolbar's **Mark as Reviewed** button no longer flickers in and out of existence
+  as the tree selection changes — it now stays visible and simply disables when nothing is
+  selected. Diff toolbars and context menus still hide the action entirely when it doesn't apply.
+
 ## [0.3.0]
 
 ### Added
