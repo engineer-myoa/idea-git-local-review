@@ -1,21 +1,32 @@
 package io.github.engineermyoa.gitlocalreview.actions
 
 import com.intellij.diff.tools.util.DiffDataKeys
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.Toggleable
 import com.intellij.openapi.project.DumbAwareAction
 import io.github.engineermyoa.gitlocalreview.ui.ReviewPanelController
 
-class MarkReviewedAndOpenNextAction : DumbAwareAction() {
+class ToggleReviewedAction : DumbAwareAction(MARK_TEXT, null, AllIcons.Actions.Checked) {
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
 
     override fun update(e: AnActionEvent) {
-        e.presentation.isEnabledAndVisible = findContext(e) != null
+        val context = findContext(e)
+        val reviewed = context != null && isReviewed(context)
+        e.presentation.isEnabledAndVisible = context != null
+        e.presentation.text = if (reviewed) UNMARK_TEXT else MARK_TEXT
+        Toggleable.setSelected(e.presentation, reviewed)
     }
 
     override fun actionPerformed(e: AnActionEvent) {
         val (controller, relPath) = findContext(e) ?: return
-        controller.markReviewedAndOpenNext(relPath)
+        controller.toggleReviewed(relPath)
+    }
+
+    private fun isReviewed(context: Pair<ReviewPanelController, String>): Boolean {
+        val (controller, relPath) = context
+        return relPath in controller.model.value.reviewedPaths
     }
 
     private fun findContext(e: AnActionEvent): Pair<ReviewPanelController, String>? =
@@ -35,6 +46,8 @@ class MarkReviewedAndOpenNextAction : DumbAwareAction() {
     }
 
     companion object {
-        const val ACTION_ID = "GitLocalReview.MarkReviewedAndOpenNext"
+        const val ACTION_ID = "GitLocalReview.ToggleReviewed"
+        private const val MARK_TEXT = "Mark as Reviewed"
+        private const val UNMARK_TEXT = "Unmark as Reviewed"
     }
 }

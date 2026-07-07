@@ -36,7 +36,7 @@ import com.intellij.ui.components.JBScrollPane
 import git4idea.GitUtil
 import git4idea.repo.GitRepository
 import git4idea.repo.GitRepositoryManager
-import io.github.engineermyoa.gitlocalreview.actions.MarkReviewedAndOpenNextAction
+import io.github.engineermyoa.gitlocalreview.actions.ToggleReviewedAction
 import io.github.engineermyoa.gitlocalreview.git.ReviewFile
 import io.github.engineermyoa.gitlocalreview.session.DiffSpec
 import java.awt.BorderLayout
@@ -86,8 +86,6 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         unreviewedOnlyCheckBox.addActionListener { render(controller.model.value) }
         refreshButton.addActionListener { onRefreshRequested() }
 
-        controller.openDiffRequest = ::openDiffAt
-
         initializeSelection()
 
         repoCombo.addActionListener { onRepositorySelected() }
@@ -112,7 +110,7 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         sink.set(VcsDataKeys.CHANGES, selectedChanges().takeIf { it.isNotEmpty() }?.toTypedArray())
     }
 
-    fun openDiffAt(files: List<ReviewFile>, startRelPath: String?) {
+    private fun openDiffAt(files: List<ReviewFile>, startRelPath: String?) {
         if (files.isEmpty()) return
         val index = files.indexOfFirst { it.relPath == startRelPath }.coerceAtLeast(0)
         val context = ShowDiffContext()
@@ -147,7 +145,7 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
 
     private fun buildActionToolbar(): JComponent {
         val group = DefaultActionGroup().apply {
-            ActionManager.getInstance().getAction(MarkReviewedAndOpenNextAction.ACTION_ID)?.let(::add)
+            ActionManager.getInstance().getAction(ToggleReviewedAction.ACTION_ID)?.let(::add)
         }
         val actionToolbar = ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLWINDOW_CONTENT, group, true)
         actionToolbar.targetComponent = this
@@ -166,7 +164,7 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         })
         addSeparator()
         ActionManager.getInstance().getAction(IdeActions.ACTION_EDIT_SOURCE)?.let(::add)
-        ActionManager.getInstance().getAction(MarkReviewedAndOpenNextAction.ACTION_ID)?.let(::add)
+        ActionManager.getInstance().getAction(ToggleReviewedAction.ACTION_ID)?.let(::add)
         addSeparator()
         add(buildGitSubmenu())
     }
@@ -314,25 +312,17 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
     }
 
     private fun loadTagsAsync(repository: GitRepository, branchNames: List<String>, heuristicDefault: String) {
-        val expectedFrom = fromRefCombo.selectedItem as? String
-        val expectedTo = toRefCombo.selectedItem as? String
         ReviewPanelController.scope(project).launch(Dispatchers.Default) {
             val tags = controller.listTags(repository)
             if (tags.isEmpty()) return@launch
             val refNames = (branchNames + tags).distinct().sorted()
             ApplicationManager.getApplication().invokeLater {
-                mergeTagsIntoRefCombos(repository, refNames, heuristicDefault, expectedFrom, expectedTo)
+                mergeTagsIntoRefCombos(repository, refNames, heuristicDefault)
             }
         }
     }
 
-    private fun mergeTagsIntoRefCombos(
-        repository: GitRepository,
-        refNames: List<String>,
-        heuristicDefault: String,
-        expectedFrom: String?,
-        expectedTo: String?
-    ) {
+    private fun mergeTagsIntoRefCombos(repository: GitRepository, refNames: List<String>, heuristicDefault: String) {
         if (selectedRepository() != repository) return
         setRefComboModels(refNames, heuristicDefault)
     }
