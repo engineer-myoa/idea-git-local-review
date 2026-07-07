@@ -5,7 +5,6 @@ import com.intellij.dvcs.repo.VcsRepositoryMappingListener
 import com.intellij.openapi.ListSelection
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -147,7 +146,7 @@ class ReviewPanel(private val project: Project) : SimpleToolWindowPanel(true, tr
         val group = DefaultActionGroup().apply {
             ActionManager.getInstance().getAction(ToggleReviewedAction.ACTION_ID)?.let(::add)
         }
-        val actionToolbar = ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLWINDOW_CONTENT, group, true)
+        val actionToolbar = ActionManager.getInstance().createActionToolbar(ToggleReviewedAction.PANEL_TOOLBAR_PLACE, group, true)
         actionToolbar.targetComponent = this
         return actionToolbar.component
     }

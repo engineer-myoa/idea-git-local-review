@@ -83,13 +83,14 @@ to exercise Compare Refs ref auto-detection and the tag pickers.
       correspond to the newly selected repository, and that each root's state is independent (e.g.
       reviewed files in one root are not shown as reviewed in another).
 
-### Known UX observation (not a defect)
+### Toolbar button visibility
 
-- [ ] **⑪ Toolbar button visibility with no selection** — With nothing selected in the tree and no
-      diff open, observe that the **Mark as Reviewed** toolbar button *disappears* rather than
-      appearing disabled (current behavior: `isEnabledAndVisible = false`). Note whether a
-      disabled-but-visible affordance would communicate the action's existence more clearly. This
-      remains a UX trade-off to revisit, not a bug to fix now.
+- [ ] **⑪ Panel toolbar button stays visible without a selection** — With nothing selected in the
+      tree and no diff open, confirm the **Mark as Reviewed** button in the tool window toolbar
+      stays *visible but disabled* (it no longer disappears). Select a file and confirm it becomes
+      enabled. This visible-but-disabled behavior applies only to the tool window toolbar — in
+      diff toolbars and context menus the action still hides entirely when it doesn't apply (see
+      ⑦).
 
 ### Tree state & navigation
 

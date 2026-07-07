@@ -14,7 +14,12 @@ class ToggleReviewedAction : DumbAwareAction(MARK_TEXT, null, AllIcons.Actions.C
     override fun update(e: AnActionEvent) {
         val context = findContext(e)
         val reviewed = context != null && isReviewed(context)
-        e.presentation.isEnabledAndVisible = context != null
+        if (e.place == PANEL_TOOLBAR_PLACE) {
+            e.presentation.isVisible = true
+            e.presentation.isEnabled = context != null
+        } else {
+            e.presentation.isEnabledAndVisible = context != null
+        }
         e.presentation.text = if (reviewed) UNMARK_TEXT else MARK_TEXT
         Toggleable.setSelected(e.presentation, reviewed)
     }
@@ -47,6 +52,7 @@ class ToggleReviewedAction : DumbAwareAction(MARK_TEXT, null, AllIcons.Actions.C
 
     companion object {
         const val ACTION_ID = "GitLocalReview.ToggleReviewed"
+        const val PANEL_TOOLBAR_PLACE = "GitLocalReviewPanelToolbar"
         private const val MARK_TEXT = "Mark as Reviewed"
         private const val UNMARK_TEXT = "Unmark as Reviewed"
     }
