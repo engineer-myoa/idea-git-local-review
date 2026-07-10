@@ -1,5 +1,17 @@
 ## [Unreleased]
 
+## [0.3.2]
+
+### Added
+- Plugin icon (light and dark variants) shown on the JetBrains Marketplace listing and the
+  Settings → Plugins page.
+- Change notes are now generated from this changelog and embedded in the plugin descriptor of
+  every build.
+
+### Changed
+- Vendor name in the plugin descriptor is now `woozu-universe`, matching the Marketplace vendor
+  profile.
+
 ## [0.3.1]
 
 ### Changed

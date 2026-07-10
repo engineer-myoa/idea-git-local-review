@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>io.github.engineermyoa.gitlocalreview</id>
     <name>Git Local Review</name>
-    <vendor url="https://github.com/engineer-myoa/idea-git-local-review">engineer-myoa</vendor>
+    <vendor url="https://github.com/engineer-myoa/idea-git-local-review">woozu-universe</vendor>
     <description><![CDATA[
         <p>Review your changes like a pull request &mdash; before it exists.</p>
         <p>Open a virtual pull request over any diff range &mdash; a comparison between any two refs (<code>A...B</code>,
